@@ -1,12 +1,24 @@
+import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
+from starlette.requests import Request
+from starlette.responses import HTMLResponse
+from starlette.staticfiles import StaticFiles
+from starlette.templating import Jinja2Templates
 
 import models, schemas
 from sqlapp import crud
 from sqlapp.database import SessionLocal, engine
 
 models.base.metadata.create_all(bind=engine)
+
+#ryj for testing
+from data.fake_post import fake_posts_db
+
 app = FastAPI()
+
+templates = Jinja2Templates(directory="tmpl")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 # Dependency
@@ -17,6 +29,15 @@ def get_db():
     finally:
         db.close()
 
+
+@app.get('/index.html', response_class=HTMLResponse)
+def get_index():
+    pass
+
+@app.get('/blog.html', response_class=HTMLResponse)
+def get_blog(request: Request):
+    return templates.TemplateResponse("blog.html", {"request": request,
+                                                    "posts": fake_posts_db})
 
 @app.get('/gardens/{g_id}', response_model=schemas.Garden)
 def find_garden(g_id: int, db: Session = Depends(get_db)):
@@ -29,3 +50,6 @@ def find_garden(g_id: int, db: Session = Depends(get_db)):
 def findstate(state:str, db: Session = Depends(get_db)):
     entry_ids = crud.get_state(db, 'assam')
     return entry_ids
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
