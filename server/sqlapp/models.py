@@ -1,5 +1,7 @@
-from sqlapp.database import base
-from sqlalchemy import Column, BigInteger, String, ForeignKey, Enum, TIMESTAMP,Integer, Float
+from psycopg2 import Timestamp
+import importlib
+from .database import base
+from sqlalchemy import Column, BigInteger, String, ForeignKey, Enum, TIMESTAMP,Integer, Float, Date, Time
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
 
@@ -44,26 +46,28 @@ class GardenAndSensor(base):
     garden = relationship('Garden')
     sensor = relationship('Sensor')
 
-class EntryType(PyEnum):
-    rainfall = 'rainfall'
+class entry_type(PyEnum):
     humidity = 'humidity'
     temperature = 'temperature'
 
-class TimeframeType(PyEnum):
-    immediate_mesaurement = 'immediate measurement'
-    range_measurement = 'range_measurement'
 
+class RainfallData(base):
+    __tablename__ = 'rainfallData'
 
-class SensorData(base):
-    __tablename__ = 'sensorData'
+    entry_id = Column(Integer, ForeignKey('sensorReading.entry_id'), primary_key=True)
+    reading = Column(Integer)
+    date = Column(Date)
 
-    entry_id = Column(BigInteger, primary_key=True)
-    type = Column(Enum(EntryType), nullable=False)
-    reading = Column(String(15), nullable=False)
-    unit = Column(String(15), nullable=False)
-    timeframe = Column(Enum(TimeframeType), nullable=False)
-    time = Column(TIMESTAMP, nullable=True)
-    start_time = Column(TIMESTAMP, nullable=True)
-    end_time = Column(TIMESTAMP, nullable=True)
+    # Establish a relationship with SensorReading
+    sensor_reading = relationship("SensorReading", back_populates="rainfall_data")
 
-    entry = relationship('SensorReading', back_populates='data')
+class TemperatureAndHumidityData(base):
+    __tablename__ = 'temperatureAndHumidityData'
+
+    entry_id = Column(Integer, ForeignKey('sensorData.entry_id'), primary_key=True)
+    dataType = Column(String(collation='pg_catalog.default'))
+    reading = Column(Float)
+    time = Column(Time)
+
+    # Establish a relationship with SensorData
+    sensor_data = relationship("SensorData", back_populates="temperature_and_humidity_data")

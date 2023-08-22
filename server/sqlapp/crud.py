@@ -6,7 +6,8 @@ import models
 def get_garden(db: Session, g_id: int):
     return db.query(models.garden).filter(models.g_id == g_id).first()
 
-
+def add_rainfall_data(db: Session, e_id: int):
+    rain_data = models.SensorData()
 def get_state(db: Session, state_name: str):
     entry_ids = (
         db.query(models.SensorData.entry_id)

@@ -1,3 +1,5 @@
+import enum
+
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
@@ -7,7 +9,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 from fastapi import Depends, FastAPI, HTTPException, Header
 from sqlalchemy.orm import Session
-
+import config
 from typing import Annotated
 import models, schemas
 from sqlapp import crud
@@ -52,6 +54,10 @@ def findstate(state: str, db: Session = Depends(get_db)):
     entry_ids = crud.get_state(db, 'assam')
     return entry_ids
 
+'''
+@app.post("/add-rainfall-data")
+def add_rainfall_data(entry: models.SensorData):
+'''
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=7000)

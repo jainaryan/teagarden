@@ -85,3 +85,31 @@ class GardenAndSensor(GardenAndSensorBase):
 
     class Config:
         orm_mode = True
+
+
+
+class RainfallDataBase(BaseModel):
+    reading: int
+    date: datetime
+
+class RainfallDataCreate(RainfallDataBase):
+    pass
+
+class RainfallData(RainfallDataBase):
+    entry_id: int
+
+    class Config:
+        orm_mode = True
+
+class TemperatureAndHumidityDataBase(BaseModel):
+    dataType: str
+    reading: float
+    time: datetime
+class TemperatureAndHumidityDataCreate(TemperatureAndHumidityDataBase):
+    pass
+
+class TemperatureAndHumidityData(TemperatureAndHumidityDataBase):
+    entry_id: int
+
+    class Config:
+        orm_mode = True
