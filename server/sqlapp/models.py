@@ -1,12 +1,10 @@
-from psycopg2 import Timestamp
-import importlib
 from .database import base
-from sqlalchemy import Column, BigInteger, String, ForeignKey, Enum, TIMESTAMP,Integer, Float, Date, Time
+from sqlalchemy import Column, String, ForeignKey, Integer, Float, Date, Time
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
 
 
-class garden(base):
+class Garden(base):
     __tablename__ = 'garden'
 
     g_id = Column(Integer, primary_key=True)
@@ -18,7 +16,7 @@ class garden(base):
     sizeofgarden = Column(Float, nullable=True)
 
 
-class sensor(base):
+class Sensor(base):
     __tablename__ = 'sensor'
     sensor_id = Column(Integer, primary_key=True)
     latitude = Column(Float, nullable=True)
@@ -27,7 +25,7 @@ class sensor(base):
     sensor_name = Column(String(20), nullable=False)
 
 
-class sensorReading(base):
+class SensorReading(base):
     __tablename__ = 'sensorReading'
 
     entry_id = Column(Integer, primary_key=True)
@@ -46,7 +44,8 @@ class GardenAndSensor(base):
     garden = relationship('Garden')
     sensor = relationship('Sensor')
 
-class entry_type(PyEnum):
+
+class EntryType(PyEnum):
     humidity = 'humidity'
     temperature = 'temperature'
 
@@ -59,7 +58,8 @@ class RainfallData(base):
     date = Column(Date)
 
     # Establish a relationship with SensorReading
-    sensor_reading = relationship("SensorReading", back_populates="rainfall_data")
+    sensor_reading = relationship("SensorReading")
+
 
 class TemperatureAndHumidityData(base):
     __tablename__ = 'temperatureAndHumidityData'
@@ -70,4 +70,4 @@ class TemperatureAndHumidityData(base):
     time = Column(Time)
 
     # Establish a relationship with SensorData
-    sensor_data = relationship("SensorData", back_populates="temperature_and_humidity_data")
+    #sensor_data = relationship("SensorData")
