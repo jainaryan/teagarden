@@ -11,7 +11,7 @@ class Garden(base):
     garden_name = Column(String(20), nullable=False)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
-    city_town = Column(String(20), nullable=False)
+    district = Column(String(20), nullable=True)
     state = Column(String(20), nullable=False)
     sizeofgarden = Column(Float, nullable=True)
 
@@ -21,8 +21,8 @@ class Sensor(base):
     sensor_id = Column(Integer, primary_key=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
-    sensor_type = Column(String(20), nullable=False)
-    sensor_name = Column(String(20), nullable=False)
+    sensor_type = Column(String(20), nullable=True)
+    sensor_name = Column(String(20), nullable=True)
 
 
 class SensorReading(base):
@@ -58,16 +58,21 @@ class RainfallData(base):
     date = Column(Date)
 
     # Establish a relationship with SensorReading
-    sensor_reading = relationship("SensorReading")
+    sensor_reading = relationship('SensorReading')
 
 
 class TemperatureAndHumidityData(base):
     __tablename__ = 'temperatureAndHumidityData'
 
-    entry_id = Column(Integer, ForeignKey('sensorData.entry_id'), primary_key=True)
+    entry_id = Column(Integer, ForeignKey('sensorReading.entry_id'), primary_key=True)
     dataType = Column(String(collation='pg_catalog.default'))
     reading = Column(Float)
-    time = Column(Time)
+    timestamp = Column(Time)
 
-    # Establish a relationship with SensorData
-    #sensor_data = relationship("SensorData")
+    sensor_reading1 = relationship("SensorReading")
+
+
+
+
+
+

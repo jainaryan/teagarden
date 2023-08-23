@@ -7,7 +7,7 @@ class GardenBase(BaseModel):
     garden_name: str
     latitude: float
     longitude: float
-    city_town: str
+    district: str
     state: str
     sizeofgarden: float
 
@@ -104,7 +104,7 @@ class RainfallData(RainfallDataBase):
 class TemperatureAndHumidityDataBase(BaseModel):
     dataType: str
     reading: float
-    time: datetime
+    timestamp: datetime
 class TemperatureAndHumidityDataCreate(TemperatureAndHumidityDataBase):
     pass
 
