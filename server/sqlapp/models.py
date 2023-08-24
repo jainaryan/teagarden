@@ -1,4 +1,3 @@
-
 import enum
 from .database import base
 from sqlalchemy import Column, String, ForeignKey, Integer, Float, Date, Time
@@ -10,7 +9,7 @@ class Garden(base):
     __tablename__ = 'garden'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(20), nullable=False)
+    name = Column(String(50), nullable=False)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     district = Column(String(20), nullable=True)
@@ -24,13 +23,12 @@ class Sensor(base):
     id = Column(Integer, primary_key=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
-    sensor_type = Column(String(20), nullable=True)
-    sensor_name = Column(String(20), nullable=True)
-    garden_id = Column(Integer, ForeignKey('garden.id'))
+    sensor_type = Column(String(50), nullable=True)
+    sensor_name = Column(String(50), nullable=True, unique=True)
+    garden_id = Column(Integer, ForeignKey('garden.id'), nullable=False)
 
     # Establish a relationship with Sensor
     garden = relationship('Garden')
-
 
 
 class RainfallData(base):
@@ -44,9 +42,11 @@ class RainfallData(base):
     # Establish a relationship with Sensor
     sensor = relationship('Sensor')
 
+
 class EntryType(enum.Enum):
     humidity = 'humidity'
     temperature = 'temperature'
+
 
 class TemperatureAndHumidityData(base):
     __tablename__ = 'temperatureAndHumidityData'
@@ -59,8 +59,4 @@ class TemperatureAndHumidityData(base):
     # Establish a relationship with Sensor
     sensor = relationship('Sensor')
 
-
-
-
-#enum not working
-
+# enum not working

@@ -29,28 +29,10 @@ def checkmonth(month: int, year: int):
         return 31
 
 
-# def add_temp_humidity_data(entry_id: int, type: str, value: float, hour: int, minute: int):
-#     time_str = "" + str(hour) + "::" + str(minute) + "::" + "00"
-#     timestamp = time.strptime(time_str, '%H::%M::%S')
-#
-#     db_session.add(
-#         TemperatureAndHumidityData(entry_id=entry_id, dataType=type, reading=value, time=timestamp)
-#     )
-#     db_session.commit()
-
-
 def convert_date(year: int, month: int, day: int):
     temp_date = "" + str(year) + "-" + str(month) + "-" + str(day)
     converted_date = datetime.strptime(temp_date, '%Y-%m-%d').date()
     return converted_date
-
-
-def rainfallData_entry(value: float, day: datetime):
-    init_db()
-    db_session.add(
-        RainfallData(reading=value, date=day)
-    )
-    db_session.commit()
 
 
 def main():
@@ -60,54 +42,48 @@ def main():
     workbook = openpyxl.load_workbook(INPUT_EXCEL, data_only=True)
 
     for sheet in workbook.worksheets:
-
+        #longitude = sheet.cell(row=2, column=15).value
+        #latitude = sheet.cell(row=3, column=15).value
+        #district = sheet.cell(row=4,column=15).value
+        #state = sheet.cell(row=5,column=15).value
+        #area = sheet.cell(row=6, column=15).value
+        gardenName = sheet.cell(row=1, column=8).value
+        if check_garden_name(gardenName):
+            gardenid = get_garden_id(gardenName)
+            sensor_id = (db_session.query(Sensor).filter_by(garden_id=gardenid).first()).id
+        else:
+            # case where garden name not present in table
+            sensorName = None
+            # need to figure how to take sensor name
+            garden_entry(name=gardenName)
+            gardenid = get_garden_id(gardenName)
+            sensor_entry(garden_id=gardenid, name=sensorName)
+            sensor_id = (db_session.query(Sensor).filter_by(garden_id=gardenid).first()).id
         temp_year = sheet.cell(row=4, column=7).value
         year = temp_year[4:]
         year = year.strip()
         first_month = 2
         last_month = 13
         first_day = 6
-
         for month in range(first_month, last_month + 1):
-
             last_day = checkmonth(month, int(year)) + 5
             for day in range(first_day, last_day + 1):
                 reading = sheet.cell(row=day, column=month).value
-                # add_rainfall_data(reading, year, month - 1, day - 5)
                 day = convert_date(year, month - 1, day - 5)
-                rainfallData_entry(reading, day)
+                # rainfallData_entry(reading, day)
+                rainfallData_entry(sensor_id = sensor_id, reading = reading, date=day)
 
 
-def create_garden(name: str, area: float, latitude=None, longitude=None, district=None, state='Assam'):
-    init_db()
-    garden = Garden(
-        name=name,
-        latitude=latitude,
-        longitude=longitude,
-        district=district,
-        state='test_state',
-        area=area
-    )
+def garden_entry(name: str, area = None, latitude=None, longitude=None, district=None, state='Assam'):
+
+    garden = Garden(name=name, latitude=latitude, longitude=longitude, district=district, state = state, area=area)
     db_session.add(garden)
     db_session.commit()
 
 
-def garden_entry(name: str, city: str, State: str, lat: float, long: float, area: int):
-    init_db()
-    db_session.add(
-        Garden(garden_name=name, latitude=lat, longitude=long, district=city, state=State, sizeofgarden=area)
-    )
-    db_session.commit()
-
-
-def test_sensor_entry():
-    init_db()
-    sensor = Sensor(latitude=80,
-                    longitude=100,
-                    sensor_type='rainfall',
-                    sensor_name='First')
-    db_session.add(sensor)
-    db_session.commit()
+def get_garden_id(gardenName: str):
+    garden = db_session.query(Garden).filter_by(name=gardenName).first()
+    return garden.id
 
 
 def get_sensor(sensorName: str):
@@ -115,84 +91,76 @@ def get_sensor(sensorName: str):
     return sensor
 
 
-def sensor_entry(lat: float, long: float, type: str, name: str):
+def test_sensor_entry():
     init_db()
-    db_session.add(
-        Sensor(sensor_name=name, sensor_type=type, latitude=lat, longitude=long)
-    )
+    sensor = Sensor(latitude=80, longitude=100, sensor_type='rainfall', sensor_name='First')
+    db_session.add(sensor)
     db_session.commit()
 
 
-def gardenAndSensor_entry(id: int):
+def sensor_entry(garden_id: int, name=None, lat=None, long=None, type=None):
     init_db()
-    db_session.add(g_id=id)
-    db_session.commit()
 
-
-# def test_sensorReading_entry():
-#     init_db()
-#     entry = SensorReading(sensor_id = 1)
-#     db_session.add(entry)
-#     db_session.commit()
-#
-#
-# def sensorReading_entry(id: int):
-#     init_db()
-#     db_session.add(sensor_id = id)
-#     db_session.commit()
-#
-#
-# def temperatureAndHumidity_entry(value: float, type: str, Timestamp: time):
-#     init_db()
-#     if (type == 'temperature'):
-#         entry_type = 'temperature'
-#     elif(type == 'humidity'):
-#         entry_type = 'humidity'
-#     #need to figure this case out
-#     else:
-#         pass
-#
-#     db_session.add(
-#         TemperatureAndHumidityData(reading = value, type = entry_type, timestamp = Timestamp)
-#     )
-
-
-def reset_tables():
-    init_db()
-    sql = text(
-        'TRUNCATE public."sensorReading", public."sensor", public."garden",public."rainfallData", public."gardenAndSensor" RESTART IDENTITY;')
-    results = db_session.execute(sql)
+    if name == None:
+        garden = db_session.query(Garden).filter_by(id=garden_id).first()
+        name = str(garden.name) + "_sensor" + str(garden.id)
+    db_session.add(Sensor(sensor_name=name, garden_id=garden_id, sensor_type=type, latitude=lat, longitude=long))
     db_session.commit()
 
 
 def test_rainfalldata_entry(sensor: Sensor):
     init_db()
-    db_session.add(
-        RainfallData(sensor_id=sensor.id, reading=100, date="1997-01-01")
-    )
+    db_session.add(RainfallData(sensor_id=sensor.id, reading=100, date="1997-01-01"))
     db_session.commit()
+
+def rainfallData_entry(sensor_id: int, reading: float, date: datetime):
+    rainfalldata = RainfallData(sensor_id = sensor_id, reading = reading, date = date)
+    db_session.add(rainfalldata)
+    db_session.commit()
+
+
+
+def check_garden_name(gardenName: str):
+    garden = (db_session.query(Garden).filter_by(name=gardenName).first())
+
+    if garden == None:
+        # garden is not present in table
+        return False
+    else:
+        # garden is present in table
+        return True
 
 
 def test_temperatureAndHumidity_entry(sensor: Sensor, dataType: EntryType, hour: int, minute: int):
     init_db()
     time_str = "" + str(hour) + "::" + str(minute) + "::" + "00"
     time_str = datetime.strptime(time_str, '%H::%M::%S')
-    db_session.add(
-        TemperatureAndHumidityData(sensor_id=sensor.id, reading=100, timestamp=time_str, dataType=dataType)
-    )
+    db_session.add(TemperatureAndHumidityData(sensor_id=sensor.id, reading=100, timestamp=time_str, dataType=dataType))
+    db_session.commit()
+
+
+def reset_tables():
+    init_db()
+    sql = text(
+        'TRUNCATE public."garden", public."sensor", public."rainfallData", public."temperatureAndHumidityData" RESTART IDENTITY;')
+    results = db_session.execute(sql)
     db_session.commit()
 
 
 if __name__ == '__main__':
-    # main()
-    # reset_tables()
-    test_sensor_entry()
+
+    reset_tables()
     init_db()
-    sensor = get_sensor('First')
+    #    test_sensor_entry()
+    main()
+    #    sensor = get_sensor('First')
     # test_sensorReading_entry()
     # test_garden_entry()
     # test_gardenAndSensor_entry()
     # test_sensorReading_entry()
-    test_rainfalldata_entry(sensor)
-    test_rainfalldata_entry(sensor)
-    test_temperatureAndHumidity_entry(sensor,'temperature', 12, 11)
+    #    test_rainfalldata_entry(sensor)
+    #    test_rainfalldata_entry(sensor)
+    #    test_temperatureAndHumidity_entry(sensor, 'temperature', 12, 11)
+#           garden_entry(name="Arun Tea Estate", district='Sonitpur')
+#           gardenid = get_garden_id("Arun Tea Estate")
+#           sensor_entry(garden_id=gardenid)
