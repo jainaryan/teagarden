@@ -1,78 +1,66 @@
+
+import enum
 from .database import base
 from sqlalchemy import Column, String, ForeignKey, Integer, Float, Date, Time
 from sqlalchemy.orm import relationship
-from enum import Enum as PyEnum
+from sqlalchemy import Enum
 
 
 class Garden(base):
     __tablename__ = 'garden'
 
-    g_id = Column(Integer, primary_key=True)
-    garden_name = Column(String(20), nullable=False)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(20), nullable=False)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     district = Column(String(20), nullable=True)
     state = Column(String(20), nullable=False)
-    sizeofgarden = Column(Float, nullable=True)
+    area = Column(Float, nullable=True)
 
 
 class Sensor(base):
     __tablename__ = 'sensor'
-    sensor_id = Column(Integer, primary_key=True)
+
+    id = Column(Integer, primary_key=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     sensor_type = Column(String(20), nullable=True)
     sensor_name = Column(String(20), nullable=True)
+    garden_id = Column(Integer, ForeignKey('garden.id'))
 
-
-class SensorReading(base):
-    __tablename__ = 'sensorReading'
-
-    entry_id = Column(Integer, primary_key=True)
-    sensor_id = Column(Integer, ForeignKey('sensor.sensor_id'), primary_key=True)
-
-    # Define relationships
-    sensor = relationship('Sensor')
-
-
-class GardenAndSensor(base):
-    __tablename__ = 'gardenAndSensor'
-
-    sensor_id = Column(Integer, ForeignKey('sensor.sensor_id'), primary_key=True)
-    g_id = Column(Integer, ForeignKey('garden.g_id'), primary_key=True)
-
+    # Establish a relationship with Sensor
     garden = relationship('Garden')
-    sensor = relationship('Sensor')
 
-
-class EntryType(PyEnum):
-    humidity = 'humidity'
-    temperature = 'temperature'
 
 
 class RainfallData(base):
     __tablename__ = 'rainfallData'
 
-    entry_id = Column(Integer, ForeignKey('sensorReading.entry_id'), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sensor_id = Column(Integer, ForeignKey('sensor.id'))
     reading = Column(Integer)
     date = Column(Date)
 
-    # Establish a relationship with SensorReading
-    sensor_reading = relationship('SensorReading')
+    # Establish a relationship with Sensor
+    sensor = relationship('Sensor')
 
+class EntryType(enum.Enum):
+    humidity = 'humidity'
+    temperature = 'temperature'
 
 class TemperatureAndHumidityData(base):
     __tablename__ = 'temperatureAndHumidityData'
 
-    entry_id = Column(Integer, ForeignKey('sensorReading.entry_id'), primary_key=True)
-    dataType = Column(String(collation='pg_catalog.default'))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sensor_id = Column(Integer, ForeignKey('sensor.id'))
+    dataType = Column(Enum(EntryType))
     reading = Column(Float)
     timestamp = Column(Time)
-
-    sensor_reading1 = relationship("SensorReading")
-
-
+    # Establish a relationship with Sensor
+    sensor = relationship('Sensor')
 
 
 
+
+#enum not working
 
