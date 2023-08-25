@@ -54,7 +54,7 @@ def main():
         else:
             # case where garden name not present in table
             sensorName = None
-            # need to figure how to take sensor name
+            # need to figure how to get sensorName value
             garden_entry(name=gardenName)
             gardenid = get_garden_id(gardenName)
             sensor_entry(garden_id=gardenid, name=sensorName)

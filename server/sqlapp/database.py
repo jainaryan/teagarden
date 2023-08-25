@@ -19,3 +19,5 @@ db_session = scoped_session(
 
 def init_db():
     base.metadata.create_all(bind=engine)
+
+

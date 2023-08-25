@@ -1,115 +1,73 @@
-from datetime import datetime
-
-from pydantic import BaseModel
 from enum import Enum
+from pydantic import BaseModel
+#from pydantic import Enum
+from typing import List
+
+class EntryType(str, Enum):
+    humidity = 'humidity'
+    temperature = 'temperature'
 
 class GardenBase(BaseModel):
-    garden_name: str
+    name: str
     latitude: float
     longitude: float
     district: str
     state: str
-    sizeofgarden: float
+    area: float
 
 class GardenCreate(GardenBase):
     pass
 
 class Garden(GardenBase):
-    g_id: int
+    id: int
 
     class Config:
         orm_mode = True
 
 class SensorBase(BaseModel):
-
     latitude: float
     longitude: float
     sensor_type: str
     sensor_name: str
-    pass
+    garden_id: int
 
 class SensorCreate(SensorBase):
     pass
 
 class Sensor(SensorBase):
-    sensor_id: int
+    id: int
+    garden: Garden
 
     class Config:
         orm_mode = True
-
-class SensorReadingBase(BaseModel):
-
-    pass
-
-class SensorReadingCreate(SensorReadingBase):
-    pass
-
-class SensorReading(SensorReadingBase):
-    entry_id: int
-    sensor_id: int
-    class Config:
-        orm_mode = True
-
-class TimeframeType(str, Enum):
-    immediate_measurement = "immediate measurement"
-    range_measurement = "range measurement"
-
-class SensorDataBase(BaseModel):
-    type: str
-    reading: str
-    unit: str
-    timeframe: TimeframeType
-    time: datetime | None = None
-    start_time: datetime | None = None
-    end_time: datetime | None = None
-
-class SensorDataCreate(SensorDataBase):
-    pass
-
-class SensorData(SensorDataBase):
-    entry_id: int
-
-    class Config:
-        orm_mode = True
-
-class GardenAndSensorBase(BaseModel):
-
-    pass
-
-class GardenAndSensorCreate(GardenAndSensorBase):
-    pass
-
-class GardenAndSensor(GardenAndSensorBase):
-    sensor_id: int
-    g_id: int
-
-    class Config:
-        orm_mode = True
-
-
 
 class RainfallDataBase(BaseModel):
+    sensor_id: int
     reading: int
-    date: datetime
+    date: str
 
 class RainfallDataCreate(RainfallDataBase):
     pass
 
 class RainfallData(RainfallDataBase):
-    entry_id: int
+    id: int
+    sensor: Sensor
 
     class Config:
         orm_mode = True
 
 class TemperatureAndHumidityDataBase(BaseModel):
-    dataType: str
+    sensor_id: int
+    dataType: EntryType
     reading: float
-    timestamp: datetime
+    timestamp: str
+
 class TemperatureAndHumidityDataCreate(TemperatureAndHumidityDataBase):
     pass
 
 class TemperatureAndHumidityData(TemperatureAndHumidityDataBase):
-    entry_id: int
+    id: int
+    sensor: Sensor
 
     class Config:
         orm_mode = True
