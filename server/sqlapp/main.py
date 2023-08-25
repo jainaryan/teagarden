@@ -11,6 +11,7 @@ import config
 from typing import Annotated, Optional, List
 import models, schemas
 from sqlapp import crud
+from sqlapp.crud import get_coordinates
 from sqlapp.database import engine
 from fastapi.middleware.cors import CORSMiddleware
 from models import *
@@ -78,6 +79,17 @@ def find_garden(g_id: int, db: Session = Depends(get_db)):
 def get_all_gardens():
     gardens = session.query(models.Garden).all()
     return gardens
+
+
+@app.get('/getcoordinates')
+def get_all_coordinates():
+    dictionary = {}
+    coordinates = []
+    gardens = session.query(models.Garden).all()
+    for garden in gardens:
+        coordinates.append(get_coordinates(garden))
+    dictionary['coordinates'] = coordinates
+    return dictionary
 
 
 @app.get('/get-all-rainfalldata')
