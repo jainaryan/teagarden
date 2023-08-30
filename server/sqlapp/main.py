@@ -9,7 +9,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
-from fastapi import Depends, FastAPI, HTTPException, Header
+from fastapi import Depends, FastAPI, HTTPException, Header, status
 from sqlalchemy.orm import Session
 import config
 from typing import Annotated, Optional, List
@@ -85,7 +85,6 @@ def get_all_rainfalldata():
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl = 'token')
 
 def authenticate_user(emailid: str, password: str):
-
     user = db_session.query(models.User).filter(User.email_id==emailid).first()
     if not user:
         return False
@@ -94,10 +93,23 @@ def authenticate_user(emailid: str, password: str):
     return user
 
 
-#@app.post('/users', response_model=schemas.User)
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+        user = db_session.query(models.User).filter(User.email_id==payload.get('email_id')).first()
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='invalid username or password')
+    return user
+
+@app.get('/users/me', response_model=schemas.User)
+def get_user(user: schemas.User = Depends(get_current_user)):
+    return user
+
 @app.post('/users', response_model=None)
 def create_user(user: schemas.User):
-    user_obj = models.User(email_id= user.email_id, password = bcrypt.hash(user.password))
+    user_obj = models.User(email_id= user.email_id, password = bcrypt.hash(user.password), first_name = user.first_name, last_name = user.last_name, contact_number = user.contact_number, id = user.id, purpose = user.purpose.value)
     db_session.add(user_obj)
     db_session.commit()
 
