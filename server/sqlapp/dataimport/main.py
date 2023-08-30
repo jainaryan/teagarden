@@ -47,18 +47,18 @@ def main():
         #district = sheet.cell(row=4,column=15).value
         #state = sheet.cell(row=5,column=15).value
         #area = sheet.cell(row=6, column=15).value
-        gardenName = sheet.cell(row=1, column=8).value
-        if check_garden_name(gardenName):
-            gardenid = get_garden_id(gardenName)
-            sensor_id = (db_session.query(Sensor).filter_by(garden_id=gardenid).first()).id
+        EntityName = sheet.cell(row=1, column=8).value
+        if check_entity_name(EntityName):
+            entity_id = get_entity_id(EntityName)
+            stationid = (db_session.query(Station).filter_by(entity_id=entity_id).first()).id
         else:
             # case where garden name not present in table
-            sensorName = None
-            # need to figure how to get sensorName value
-            garden_entry(name=gardenName)
-            gardenid = get_garden_id(gardenName)
-            sensor_entry(garden_id=gardenid, name=sensorName)
-            sensor_id = (db_session.query(Sensor).filter_by(garden_id=gardenid).first()).id
+            stationName = None
+            # need to figure how to get stationName value
+            garden_entry(name=EntityName)
+            entityid = get_entity_id(EntityName)
+            sensor_entry(entity_id=entityid, name=stationName)
+            stationid = (db_session.query(Station).filter_by(entity_id=entityid).first()).id
         temp_year = sheet.cell(row=4, column=7).value
         year = temp_year[4:]
         year = year.strip()
@@ -71,59 +71,59 @@ def main():
                 reading = sheet.cell(row=day, column=month).value
                 day = convert_date(year, month - 1, day - 5)
                 # rainfallData_entry(reading, day)
-                rainfallData_entry(sensor_id = sensor_id, reading = reading, date=day)
+                rainfallData_entry(station_id=stationid, reading = reading, date=day)
 
 
 def garden_entry(name: str, area = None, latitude=None, longitude=None, district=None, state='Assam'):
 
-    garden = Garden(name=name, latitude=latitude, longitude=longitude, district=district, state = state, area=area)
-    db_session.add(garden)
+    entity = GeoEntity(name=name, latitude=latitude, longitude=longitude, district=district, state = state, area=area)
+    db_session.add(entity)
     db_session.commit()
 
 
-def get_garden_id(gardenName: str):
-    garden = db_session.query(Garden).filter_by(name=gardenName).first()
-    return garden.id
+def get_entity_id(entityName: str):
+    entity = db_session.query(GeoEntity).filter_by(name=entityName).first()
+    return entity.id
 
 
-def get_sensor(sensorName: str):
-    sensor = db_session.query(Sensor).filter_by(sensor_name=sensorName).first()
+def get_sensor(stationName: str):
+    sensor = db_session.query(Station).filter_by(sensor_name=stationName).first()
     return sensor
 
 
 def test_sensor_entry():
     init_db()
-    sensor = Sensor(latitude=80, longitude=100, sensor_type='rainfall', sensor_name='First')
+    sensor = Station(latitude=80, longitude=100, sensor_type='rainfall', sensor_name='First')
     db_session.add(sensor)
     db_session.commit()
 
 
-def sensor_entry(garden_id: int, name=None, lat=None, long=None, type=None):
+def sensor_entry(entity_id: int, name=None, lat=None, long=None, type=None):
     init_db()
 
     if name == None:
-        garden = db_session.query(Garden).filter_by(id=garden_id).first()
+        garden = db_session.query(GeoEntity).filter_by(id=entity_id).first()
         name = str(garden.name) + "_sensor" + str(garden.id)
-    db_session.add(Sensor(sensor_name=name, garden_id=garden_id, sensor_type=type, latitude=lat, longitude=long))
+    db_session.add(Station(sensor_name=name, entity_id=entity_id, sensor_type=type, latitude=lat, longitude=long))
     db_session.commit()
 
 
-def test_rainfalldata_entry(sensor: Sensor):
+def test_rainfalldata_entry(sensor: Station):
     init_db()
-    db_session.add(RainfallData(sensor_id=sensor.id, reading=100, date="1997-01-01"))
+    db_session.add(RainfallData(station_id=sensor.id, reading=100, date="1997-01-01"))
     db_session.commit()
 
-def rainfallData_entry(sensor_id: int, reading: float, date: datetime):
-    rainfalldata = RainfallData(sensor_id = sensor_id, reading = reading, date = date)
+def rainfallData_entry(station_id: int, reading: float, date: datetime):
+    rainfalldata = RainfallData(station_id = station_id, reading = reading, date = date)
     db_session.add(rainfalldata)
     db_session.commit()
 
 
 
-def check_garden_name(gardenName: str):
-    garden = (db_session.query(Garden).filter_by(name=gardenName).first())
+def check_entity_name(entityName: str):
+    entity = (db_session.query(GeoEntity).filter_by(name=entityName).first())
 
-    if garden == None:
+    if entity == None:
         # garden is not present in table
         return False
     else:
@@ -131,36 +131,38 @@ def check_garden_name(gardenName: str):
         return True
 
 
-def test_temperatureAndHumidity_entry(sensor: Sensor, dataType: EntryType, hour: int, minute: int):
+def test_temperatureAndHumidity_entry(station: Station, dataType: EntryType, hour: int, minute: int):
     init_db()
     time_str = "" + str(hour) + "::" + str(minute) + "::" + "00"
     time_str = datetime.strptime(time_str, '%H::%M::%S')
-    db_session.add(TemperatureAndHumidityData(sensor_id=sensor.id, reading=100, timestamp=time_str, dataType=dataType))
+    db_session.add(TemperatureAndHumidityData(station_id=station.id, reading=100, timestamp=time_str, dataType=dataType))
     db_session.commit()
 
 
 def reset_tables():
     init_db()
     sql = text(
-        'TRUNCATE public."garden", public."sensor", public."rainfallData", public."temperatureAndHumidityData" RESTART IDENTITY;')
-    results = db_session.execute(sql)
+        'TRUNCATE public."geoEntity", public."station", public."rainfallData", public."temperatureAndHumidityData" RESTART IDENTITY;')
+
     db_session.commit()
 
 
 if __name__ == '__main__':
 
     reset_tables()
+
     init_db()
     #    test_sensor_entry()
     main()
-    #    sensor = get_sensor('First')
+
+    #    station = get_sensor('First')
     # test_sensorReading_entry()
     # test_garden_entry()
     # test_gardenAndSensor_entry()
     # test_sensorReading_entry()
-    #    test_rainfalldata_entry(sensor)
-    #    test_rainfalldata_entry(sensor)
-    #    test_temperatureAndHumidity_entry(sensor, 'temperature', 12, 11)
+    #    test_rainfalldata_entry(station)
+    #    test_rainfalldata_entry(station)
+    #    test_temperatureAndHumidity_entry(station, 'temperature', 12, 11)
 #           garden_entry(name="Arun Tea Estate", district='Sonitpur')
 #           gardenid = get_garden_id("Arun Tea Estate")
-#           sensor_entry(garden_id=gardenid)
+#           sensor_entry(entity_id=gardenid)

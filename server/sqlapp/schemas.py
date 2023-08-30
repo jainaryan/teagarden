@@ -1,42 +1,45 @@
 from enum import Enum
+
+from sqlalchemy import DateTime
 from pydantic import BaseModel
 #from pydantic import Enum
-from typing import List
+from typing import List, Optional
+
 
 class EntryType(str, Enum):
     humidity = 'humidity'
     temperature = 'temperature'
 
-class GardenBase(BaseModel):
+class GeoEntityBase(BaseModel):
     name: str
-    latitude: float
-    longitude: float
-    district: str
+    latitude: Optional[float]
+    longitude: Optional[float]
+    district: Optional[str]
     state: str
-    area: float
+    area: Optional[float]
 
-class GardenCreate(GardenBase):
+class GeoEntityCreate(GeoEntityBase):
     pass
 
-class Garden(GardenBase):
+class GeoEntity(GeoEntityBase):
     id: int
 
     class Config:
         orm_mode = True
 
-class SensorBase(BaseModel):
+class StationBase(BaseModel):
     latitude: float
     longitude: float
     sensor_type: str
     sensor_name: str
     garden_id: int
 
-class SensorCreate(SensorBase):
+class StationCreate(StationBase):
     pass
 
-class Sensor(SensorBase):
+class Station(StationBase):
     id: int
-    garden: Garden
+    garden: GeoEntity
 
     class Config:
         orm_mode = True
@@ -44,14 +47,15 @@ class Sensor(SensorBase):
 class RainfallDataBase(BaseModel):
     sensor_id: int
     reading: int
-    date: str
+    start_time: str
+    end_time: str
 
 class RainfallDataCreate(RainfallDataBase):
     pass
 
 class RainfallData(RainfallDataBase):
     id: int
-    sensor: Sensor
+    station: Station
 
     class Config:
         orm_mode = True
@@ -67,7 +71,41 @@ class TemperatureAndHumidityDataCreate(TemperatureAndHumidityDataBase):
 
 class TemperatureAndHumidityData(TemperatureAndHumidityDataBase):
     id: int
-    sensor: Sensor
+    station: Station
+
+    class Config:
+        orm_mode = True
+
+
+
+
+
+
+
+
+
+
+
+
+class PurposeType(str, Enum):
+    other = 'other'
+    research = 'research purpose'
+    curious = 'just curious'
+    # Add more purposes as needed
+
+class UserBase(BaseModel):
+    email_id: str
+    password: str
+    first_name: str
+    last_name: str
+    contact_number: int
+    purpose: PurposeType
+
+class UserCreate(UserBase):
+    pass
+
+class User(UserBase):
+    id: int
 
     class Config:
         orm_mode = True

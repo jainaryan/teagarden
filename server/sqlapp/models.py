@@ -1,12 +1,16 @@
 import enum
-from database import base
+from sqlalchemy import DATETIME, DateTime
+
+import timestamp as timestamp
+from passlib.hash import bcrypt
+from sqlapp.database import base
 from sqlalchemy import Column, String, ForeignKey, Integer, Float, Date, Time
 from sqlalchemy.orm import relationship
 from sqlalchemy import Enum
 
 
-class Garden(base):
-    __tablename__ = 'garden'
+class GeoEntity(base):
+    __tablename__ = 'geoEntity'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
@@ -17,30 +21,30 @@ class Garden(base):
     area = Column(Float, nullable=True)
 
 
-class Sensor(base):
-    __tablename__ = 'sensor'
+class Station(base):
+    __tablename__ = 'station'
 
     id = Column(Integer, primary_key=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     sensor_type = Column(String(50), nullable=True)
     sensor_name = Column(String(50), nullable=True, unique=True)
-    garden_id = Column(Integer, ForeignKey('garden.id'), nullable=False)
+    entity_id = Column(Integer, ForeignKey('geoEntity.id'), nullable=False)
 
-    # Establish a relationship with Sensor
-    garden = relationship('Garden')
+
+    geoEntity = relationship('GeoEntity')
 
 
 class RainfallData(base):
     __tablename__ = 'rainfallData'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    sensor_id = Column(Integer, ForeignKey('sensor.id'))
+    station_id = Column(Integer, ForeignKey('station.id'))
     reading = Column(Integer)
-    date = Column(Date)
-
-    # Establish a relationship with Sensor
-    sensor = relationship('Sensor')
+    #date = Column(Date)
+    start_time = Column(DateTime)
+    end_time = Column(DateTime)
+    station = relationship('Station')
 
 
 class EntryType(enum.Enum):
@@ -52,11 +56,39 @@ class TemperatureAndHumidityData(base):
     __tablename__ = 'temperatureAndHumidityData'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    sensor_id = Column(Integer, ForeignKey('sensor.id'))
+    station_id = Column(Integer, ForeignKey('station.id'))
     dataType = Column(Enum(EntryType))
     reading = Column(Float)
     timestamp = Column(Time)
     # Establish a relationship with Sensor
-    sensor = relationship('Sensor')
+    station = relationship('Station')
 
-# enum not working
+
+class purposeType(enum.Enum):
+        other = 'other'
+        research = 'research purpose'
+        curious = 'just curious'
+
+
+class User(base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email_id = Column(String, unique=True)
+    password = Column(String)
+    first_name = Column(String)
+    last_name = Column(String)
+    contact_number = Column(Integer)
+    purpose = Column(Enum(purposeType))
+
+    @classmethod
+    def get_user(cls, email_id):
+       return cls.get(email_id = email_id)
+
+    def verify_password(self, password):
+        return bcrypt.verify(password,self.password)
+
+from pydantic import BaseModel
+
+
+class TempUser(BaseModel):
+    email: str

@@ -1,4 +1,8 @@
 import enum
+import jwt
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from sqlalchemy import JSON
+from passlib.hash import bcrypt
 from database import db_session
 import uvicorn
 from starlette.requests import Request
@@ -14,7 +18,8 @@ from sqlapp import crud
 from sqlapp.crud import get_coordinates
 from sqlapp.database import engine
 from fastapi.middleware.cors import CORSMiddleware
-from models import *
+from models import User
+
 models.base.metadata.create_all(bind=engine)
 
 # ryj for testing
@@ -23,12 +28,12 @@ from data.fake_post import fake_posts_db
 app = FastAPI()
 session = db_session
 
-#templates = Jinja2Templates(directory="tmpl")
-#app.mount("/static", StaticFiles(directory="static"), name="static")
+# templates = Jinja2Templates(directory="tmpl")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
-#CORS PART
+# CORS PART
 origins = ['https://localhost:3000']
-
+JWT_SECRET ='4ded425af3e0b0da6284b8f860cfae26'
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -36,20 +41,6 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Dependency
@@ -60,6 +51,7 @@ def get_db():
     finally:
         db.close()
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 '''
 @app.get('/blog.html', response_class=HTMLResponse)
 def get_blog(request: Request):
@@ -67,29 +59,20 @@ def get_blog(request: Request):
                                                     "posts": fake_posts_db})
 '''
 
-@app.get('/gardens/{g_id}', response_model=schemas.Garden)
+#def get_current_user(token: str = Depends(oauth2_scheme)):
+
+@app.get('/gardens/{g_id}', response_model=schemas.GeoEntity)
 def find_garden(g_id: int, db: Session = Depends(get_db)):
-    garden_found = crud.get_garden(db, g_id=g_id)
+    garden_found = crud.get_entity(db, g_id=g_id)
     if garden_found is None:
-        raise HTTPException(status_code=404, detail="garden not found")
+        raise HTTPException(status_code=404, detail="entity not found")
     return garden_found
 
 
-@app.get('/get-all-gardens')
+@app.get('/get-all-gardens', response_model=List[schemas.GeoEntityBase])
 def get_all_gardens():
-    gardens = session.query(models.Garden).all()
-    return gardens
-
-
-@app.get('/getcoordinates')
-def get_all_coordinates():
-    dictionary = {}
-    coordinates = []
-    gardens = session.query(models.Garden).all()
-    for garden in gardens:
-        coordinates.append(get_coordinates(garden))
-    dictionary['coordinates'] = coordinates
-    return dictionary
+    entities = session.query(models.GeoEntity).all()
+    return entities
 
 
 @app.get('/get-all-rainfalldata')
@@ -97,10 +80,43 @@ def get_all_rainfalldata():
     rainfalldata = session.query(models.RainfallData).all()
     return rainfalldata
 
-@app.get('/gardens/findstate', response_model=list[int])
-def findstate(state: str, db: Session = Depends(get_db)):
-    entry_ids = crud.get_state(db, 'assam')
-    return entry_ids
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl = 'token')
+
+def authenticate_user(emailid: str, password: str):
+
+    user = db_session.query(models.User).filter(User.email_id==emailid).first()
+    if not user:
+        return False
+    if not user.verify_password(password):
+        return False
+    return user
+
+
+#@app.post('/users', response_model=schemas.User)
+@app.post('/users', response_model=None)
+def create_user(user: schemas.User):
+    user_obj = models.User(email_id= user.email_id, password = bcrypt.hash(user.password))
+    db_session.add(user_obj)
+    db_session.commit()
+
+@app.post('/token')
+def generate_token(form_data: OAuth2PasswordRequestForm=Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        return {"error": "invalid credentials"}
+    user_dict = {
+        "id": user.id,
+        "password": user.password,
+        "email_id": user.email_id,
+
+    }
+
+    token = jwt.encode(user_dict, JWT_SECRET, algorithm="HS256")
+
+    return {'access_token': token, 'token_type': 'bearer'}
+
 
 '''
 @app.post("/add-rainfall-data")
