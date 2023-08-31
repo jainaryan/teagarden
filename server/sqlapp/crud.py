@@ -1,15 +1,66 @@
-from sqlalchemy.orm import Session
-import models
+import calendar
 
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+from models import *
+
+
+def get_all_entities_with_data(db: Session, year: int):
+    entities_with_data = []
+
+    # Fetch all GeoEntities
+    entities = db.query(GeoEntity).all()
+
+    for entity in entities:
+        entity_data = {
+            "id": entity.id,
+            "name": entity.name,
+            "longitude": entity.longitude,
+            "latitude": entity.latitude,
+            "monthly_data": []
+
+        }
+
+        for month in range(1, 13):
+            monthly_data = {
+                "month": calendar.month_name[month],
+                "rainfall_min": None,
+                "rainfall_max": None,
+                "temperature_min": None,
+                "temperature_max": None,
+                "humidity_min": None,
+                "humidity_max": None
+            }
+
+            # Fetch monthly data for RainfallData
+            rainfall_min_max = db.query(func.min(RainfallData.reading), func.max(RainfallData.reading)). \
+                filter(RainfallData.station.has(entity_id=entity.id), func.extract('year', RainfallData.date) == year,
+                       func.extract('month', RainfallData.date) == month).first()
+            if rainfall_min_max:
+                monthly_data["rainfall_min"], monthly_data["rainfall_max"] = rainfall_min_max
+
+            # Fetch monthly data for TemperatureAndHumidityData
+            temp_humidity_min_max = db.query(func.min(TemperatureAndHumidityData.reading),
+                                             func.max(TemperatureAndHumidityData.reading)). \
+                filter(TemperatureAndHumidityData.station.has(entity_id=entity.id),
+                       func.extract('year', TemperatureAndHumidityData.timestamp) == year,
+                       func.extract('month', TemperatureAndHumidityData.timestamp) == month).first()
+            if temp_humidity_min_max:
+                monthly_data["temperature_min"], monthly_data["temperature_max"] = temp_humidity_min_max
+
+            # Similar logic for humidity data
+
+            entity_data["monthly_data"].append(monthly_data)
+
+        entities_with_data.append(entity_data)
+
+    return entities_with_data
 
 def get_garden(db: Session, g_id: int):
-    return db.query(models.GeoEntity).filter(id == g_id).first()
-
-def add_rainfall_data(db: Session, e_id: int):
-    rain_data = models.SensorData()
+    return db.query(GeoEntity).filter(id == g_id).first()
 
 
-def get_coordinates(entity: models.GeoEntity):
+def get_coordinates(entity: GeoEntity):
     coordinates = (entity.latitude, entity.longitude)
     return (coordinates)
 

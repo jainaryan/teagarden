@@ -41,9 +41,10 @@ class RainfallData(base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     station_id = Column(Integer, ForeignKey('station.id'))
     reading = Column(Integer)
-    #date = Column(Date)
-    start_time = Column(DateTime)
-    end_time = Column(DateTime)
+    date = Column(Date)
+    #start_time = Column(DateTime)
+
+    #end_time = Column(DateTime)
     station = relationship('Station')
 
 
@@ -87,8 +88,3 @@ class User(base):
     def verify_password(self, password):
         return bcrypt.verify(password,self.password)
 
-from pydantic import BaseModel
-
-
-class TempUser(BaseModel):
-    email: str

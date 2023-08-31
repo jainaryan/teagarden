@@ -15,7 +15,7 @@ import config
 from typing import Annotated, Optional, List
 import models, schemas
 from sqlapp import crud
-from sqlapp.crud import get_coordinates
+from sqlapp.crud import get_coordinates, get_all_entities_with_data
 from sqlapp.database import engine
 from fastapi.middleware.cors import CORSMiddleware
 from models import User
@@ -80,6 +80,10 @@ def get_all_rainfalldata():
     rainfalldata = session.query(models.RainfallData).all()
     return rainfalldata
 
+@app.get('/')
+def get_entities(year: int, db: Session = Depends(get_db)):
+    data = get_all_entities_with_data(db, year)
+    return data[0]
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl = 'token')

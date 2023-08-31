@@ -142,7 +142,7 @@ def test_temperatureAndHumidity_entry(station: Station, dataType: EntryType, hou
 def reset_tables():
     init_db()
     sql = text(
-        'TRUNCATE public."geoEntity", public."station", public."rainfallData", public."temperatureAndHumidityData" RESTART IDENTITY;')
+        'TRUNCATE public."geoEntity", public."station", public."users",public."rainfallData", public."temperatureAndHumidityData" RESTART IDENTITY;')
 
     db_session.commit()
 
