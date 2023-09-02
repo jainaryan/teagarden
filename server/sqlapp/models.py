@@ -40,7 +40,7 @@ class RainfallData(base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     station_id = Column(Integer, ForeignKey('station.id'))
-    reading = Column(Integer)
+    reading = Column(Float)
     date = Column(Date)
     #start_time = Column(DateTime)
 
@@ -88,3 +88,8 @@ class User(base):
     def verify_password(self, password):
         return bcrypt.verify(password,self.password)
 
+class Units(base):
+    __tablename__ = "units"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    measurement = Column(String)
+    unit = Column(String)

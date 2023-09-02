@@ -107,8 +107,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             detail='invalid username or password')
     return user
 
-@app.get('/users/me', response_model=schemas.User)
-def get_user(user: schemas.User = Depends(get_current_user)):
+@app.get('/users/me', response_model=None)
+def get_user(user: models.User):
     return user
 
 @app.post('/users', response_model=None)
@@ -123,9 +123,13 @@ def generate_token(form_data: OAuth2PasswordRequestForm=Depends()):
     if not user:
         return {"error": "invalid credentials"}
     user_dict = {
-        "id": user.id,
-        "password": user.password,
-        "email_id": user.email_id,
+        "id":               user.id,
+        "password":         user.password,
+        "email_id":         user.email_id,
+#        "first_name":       user.first_name,
+#        "last_name":        user.last_name,
+#        "contact_number":   user.contact_number,
+#        "purpose":          user.purpose
 
     }
 
