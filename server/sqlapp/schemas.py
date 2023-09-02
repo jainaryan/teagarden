@@ -93,9 +93,12 @@ class PurposeType(str, Enum):
     curious = 'just curious'
     # Add more purposes as needed
 
+
+#optional part is getting returned as null need to fix
+
 class UserBase(BaseModel):
     email_id: str
-    password: str
+    password: Optional[str] = None
     first_name: str
     last_name: str
     contact_number: int
@@ -105,7 +108,7 @@ class UserCreate(UserBase):
     pass
 
 class User(UserBase):
-    id: int
+    id: Optional[int] = None
 
     class Config:
         orm_mode = True
