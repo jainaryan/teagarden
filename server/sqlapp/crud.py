@@ -15,42 +15,52 @@ def get_all_entities_with_data(db: Session, year: int):
         entity_data = {
             "id": entity.id,
             "name": entity.name,
-            "longitude": entity.longitude,
-            "latitude": entity.latitude,
-            "monthly_data": []
-
+            "coordinates": {"longitude": entity.longitude,"latitude": entity.latitude},
+            "stations": []  # Add stations data here
         }
 
-        for month in range(1, 13):
-            monthly_data = {
-                "month": calendar.month_name[month],
-                "rainfall_min": None,
-                "rainfall_max": None,
-                "temperature_min": None,
-                "temperature_max": None,
-                "humidity_min": None,
-                "humidity_max": None
+        # Fetch associated stations for the current entity
+        stations = db.query(Station).filter_by(entity_id=entity.id).all()
+
+        for station in stations:
+            station_data = {
+                "station_id": station.id,
+                "station_name": station.sensor_name,
+                "monthly_data": []
             }
 
-            # Fetch monthly data for RainfallData
-            rainfall_min_max = db.query(func.min(RainfallData.reading), func.max(RainfallData.reading)). \
-                filter(RainfallData.station.has(entity_id=entity.id), func.extract('year', RainfallData.date) == year,
-                       func.extract('month', RainfallData.date) == month).first()
-            if rainfall_min_max:
-                monthly_data["rainfall_min"], monthly_data["rainfall_max"] = rainfall_min_max
+            for month in range(1, 13):
+                monthly_data = {
+                    "month": calendar.month_name[month],
+                    "rainfall_min": None,
+                    "rainfall_max": None,
+                    "temperature_min": None,
+                    "temperature_max": None,
+                    "humidity_min": None,
+                    "humidity_max": None
+                }
 
-            # Fetch monthly data for TemperatureAndHumidityData
-            temp_humidity_min_max = db.query(func.min(TemperatureAndHumidityData.reading),
-                                             func.max(TemperatureAndHumidityData.reading)). \
-                filter(TemperatureAndHumidityData.station.has(entity_id=entity.id),
-                       func.extract('year', TemperatureAndHumidityData.timestamp) == year,
-                       func.extract('month', TemperatureAndHumidityData.timestamp) == month).first()
-            if temp_humidity_min_max:
-                monthly_data["temperature_min"], monthly_data["temperature_max"] = temp_humidity_min_max
+                # Fetch monthly data for RainfallData
+                rainfall_min_max = db.query(func.min(RainfallData.reading), func.max(RainfallData.reading)). \
+                    filter(RainfallData.station_id == station.id, func.extract('year', RainfallData.date) == year,
+                           func.extract('month', RainfallData.date) == month).first()
+                if rainfall_min_max:
+                    monthly_data["rainfall_min"], monthly_data["rainfall_max"] = rainfall_min_max
 
-            # Similar logic for humidity data
+                # Fetch monthly data for TemperatureAndHumidityData
+                temp_humidity_min_max = db.query(func.min(TemperatureAndHumidityData.reading),
+                                                 func.max(TemperatureAndHumidityData.reading)). \
+                    filter(TemperatureAndHumidityData.station_id == station.id,
+                           func.extract('year', TemperatureAndHumidityData.timestamp) == year,
+                           func.extract('month', TemperatureAndHumidityData.timestamp) == month).first()
+                if temp_humidity_min_max:
+                    monthly_data["temperature_min"], monthly_data["temperature_max"] = temp_humidity_min_max
 
-            entity_data["monthly_data"].append(monthly_data)
+                # Similar logic for humidity data
+
+                station_data["monthly_data"].append(monthly_data)
+
+            entity_data["stations"].append(station_data)
 
         entities_with_data.append(entity_data)
 
