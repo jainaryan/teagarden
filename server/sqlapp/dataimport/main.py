@@ -4,9 +4,9 @@ import openpyxl
 from sqlalchemy.sql import text
 from sqlapp.models import *
 from sqlapp.database import db_session, init_db, engine, conn
-from excel_file_reader import format_sheet, input_data_from_excel, read_values, read_workbook
-
-folder = 'C:\\Projects\\internship\\teagarden\\server\\sqlapp\\dataimport\\excel_files'
+from excel_file_checker import read_workbook
+from sqlapp.config import folder
+#from excel_file_checker import check_file
 
 def populate_units_table():
     db_session.add(Units(measurement='Humidity', unit='Percentage'))

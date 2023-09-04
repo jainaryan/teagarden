@@ -4,7 +4,6 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import *
 
-
 def get_all_entities_with_data(db: Session, year: int):
     entities_with_data = []
 
@@ -15,7 +14,7 @@ def get_all_entities_with_data(db: Session, year: int):
         entity_data = {
             "id": entity.id,
             "name": entity.name,
-            "coordinates": {"longitude": entity.longitude,"latitude": entity.latitude},
+            "coordinates": {"longitude": entity.longitude, "latitude": entity.latitude},
             "stations": []  # Add stations data here
         }
 
