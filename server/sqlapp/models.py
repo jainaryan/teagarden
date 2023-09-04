@@ -41,10 +41,9 @@ class RainfallData(base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     station_id = Column(Integer, ForeignKey('station.id'))
     reading = Column(Float)
-    date = Column(Date)
-    #start_time = Column(DateTime)
-
-    #end_time = Column(DateTime)
+    #date = Column(Date)
+    start_time = Column(DateTime)
+    end_time = Column(DateTime)
     station = relationship('Station')
 
 

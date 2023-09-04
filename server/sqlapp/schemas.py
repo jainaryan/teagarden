@@ -79,14 +79,6 @@ class TemperatureAndHumidityData(TemperatureAndHumidityDataBase):
 
 
 
-
-
-
-
-
-
-
-
 class PurposeType(str, Enum):
     other = 'other'
     research = 'research purpose'

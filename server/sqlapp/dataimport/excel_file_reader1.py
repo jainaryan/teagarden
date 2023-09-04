@@ -1,16 +1,18 @@
-from datetime import datetime
+from datetime import datetime, time
 import openpyxl
-from sqlapp.models  import *
+from sqlapp.models import *
 from sqlapp.database import *
+
+#NEED TO ENSURE READING SHOULD BE 0 INSTEAD OF NOTHING
+
 def type_1_reader(workbook):
     first_sheet = True
     for sheet in workbook._sheets:
         if first_sheet:
-            entityName, latitude, longitude, district, state, area = read_values(sheet)
+            entityName,entity_id, station_id, latitude, longitude, district, state, area, unit = read_values(sheet)
             if check_entity_name(entityName):
-                # entity in table
-                entity_id = sheet.cell(row=2, column=2).value
-                station_id = sheet.cell(row=3, column=2).value
+                #entity in table
+                pass
             else:
                 # entity not in table
                 geoEntity_entry(name=entityName, latitude=latitude, longitude=longitude, district=district, state=state,
@@ -49,13 +51,13 @@ def input_data_from_excel(sheet, station_id):
                 break
             else:
                 reading = float(sheet.cell(row=day, column=month).value)
-                date = convert_date(year, month - 1, day - 2)
-                rainfallData_entry(station_id=station_id, reading=reading, date=date)
+                start_time, end_time = convert_date(year, month - 1, day - 2)
+                rainfallData_entry(station_id=station_id, reading=reading, start_time = start_time, end_time=end_time)
 
 
 def find_last_day_of_month(month: int, year: int):
-    if month == 3:
-        if year % 4 == 0:
+    if (month == 3):
+        if (year % 4) == 0:
             return 29
         else:
             return 28
@@ -75,17 +77,17 @@ def find_last_day_of_month(month: int, year: int):
         return 31
 
 
-
-
-
 def read_values(sheet):
     name = sheet.cell(row=1, column=2).value
+    entity_id = sheet.cell(row=2, column=2).value
+    station_id = sheet.cell(row=3, column=2).value
     latitude = sheet.cell(row=4, column=2).value
     longitude = sheet.cell(row=5, column=2).value
     district = sheet.cell(row=6, column=2).value
     state = sheet.cell(row=7, column=2).value
     area = sheet.cell(row=8, column=2).value
-    return name, latitude, longitude, district, state, area
+    unit = sheet.cell(row = 10, column = 2).value
+    return name,entity_id, station_id, latitude, longitude, district, state, area, unit
 
 
 def geoEntity_entry(name: str, area=None, latitude=None, longitude=None, district=None, state='Assam'):
@@ -131,8 +133,8 @@ def check_entity_name(entityName: str):
         return True
 
 
-def rainfallData_entry(station_id: int, reading: float, date: datetime):
-    rainfalldata = RainfallData(station_id=station_id, reading=reading, date=date)
+def rainfallData_entry(station_id: int, reading: float, start_time: datetime, end_time: datetime):
+    rainfalldata = RainfallData(station_id=station_id, reading=reading, start_time = start_time, end_time= end_time)
     db_session.add(rainfalldata)
     db_session.commit()
 
@@ -146,4 +148,8 @@ def get_year(year: int):
 def convert_date(year: int, month: int, day: int):
     temp_date = "" + str(year) + "-" + str(month) + "-" + str(day)
     converted_date = datetime.strptime(temp_date, '%Y-%m-%d').date()
-    return converted_date
+    start_time = datetime.combine(converted_date, time(0, 0))
+
+    # Set the end time to 11:59 pm
+    end_time = datetime.combine(converted_date, time(23, 59))
+    return start_time,end_time
