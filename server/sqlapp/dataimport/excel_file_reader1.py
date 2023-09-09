@@ -22,7 +22,7 @@ def type_1_reader(workbook):
             first_sheet = False
         else:
             format_sheet(sheet, workbook)
-            input_data_from_excel(sheet, station_id)
+            input_data_from_excel(sheet, station_id, unit)
 
 
 def format_sheet(sheet, workbook):
@@ -37,7 +37,13 @@ def format_sheet(sheet, workbook):
 
 
 
-def input_data_from_excel(sheet, station_id):
+def input_data_from_excel(sheet, station_id, unit):
+    if (unit == 'inches'):
+        multiplier = 25.4
+    elif (unit == 'millimetres'):
+        multiplier = 1
+    elif (unit == 'centimeters'):
+        multiplier = 10
     temp_year = sheet.cell(row=1, column=1).value
     year = get_year(temp_year)
     first_month = 2
@@ -50,7 +56,7 @@ def input_data_from_excel(sheet, station_id):
             if check_reading == 'N/A' or check_reading == None:
                 break
             else:
-                reading = float(sheet.cell(row=day, column=month).value)
+                reading = float(sheet.cell(row=day, column=month).value) * multiplier
                 start_time, end_time = convert_date(year, month - 1, day - 2)
                 rainfallData_entry(station_id=station_id, reading=reading, start_time = start_time, end_time=end_time)
 

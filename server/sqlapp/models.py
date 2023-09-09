@@ -4,7 +4,7 @@ from sqlalchemy import DATETIME, DateTime
 import timestamp as timestamp
 from passlib.hash import bcrypt
 from sqlapp.database import base
-from sqlalchemy import Column, String, ForeignKey, Integer, Float, Date, Time
+from sqlalchemy import Column, String, ForeignKey, Integer, Float, Date, Time, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy import Enum
 
@@ -79,7 +79,7 @@ class User(base):
     last_name = Column(String)
     contact_number = Column(Integer)
     purpose = Column(Enum(purposeType))
-
+    authorized = Column(Boolean)
     @classmethod
     def get_user(cls, email_id):
        return cls.get(email_id = email_id)

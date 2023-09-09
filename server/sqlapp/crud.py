@@ -1,6 +1,6 @@
 import calendar
 
-from sqlalchemy import func
+from sqlalchemy import func, extract
 from sqlalchemy.orm import Session
 from models import *
 
@@ -41,8 +41,9 @@ def get_all_entities_with_data(db: Session, year: int):
 
                 # Fetch monthly data for RainfallData
                 rainfall_min_max = db.query(func.min(RainfallData.reading), func.max(RainfallData.reading)). \
-                    filter(RainfallData.station_id == station.id, func.extract('year', RainfallData.date) == year,
-                           func.extract('month', RainfallData.date) == month).first()
+                    filter(RainfallData.station_id == station.id,
+                           extract('year', RainfallData.start_time) == year,
+                           extract('month', RainfallData.start_time) == month).first()
                 if rainfall_min_max:
                     monthly_data["rainfall_min"], monthly_data["rainfall_max"] = rainfall_min_max
 
@@ -50,8 +51,8 @@ def get_all_entities_with_data(db: Session, year: int):
                 temp_humidity_min_max = db.query(func.min(TemperatureAndHumidityData.reading),
                                                  func.max(TemperatureAndHumidityData.reading)). \
                     filter(TemperatureAndHumidityData.station_id == station.id,
-                           func.extract('year', TemperatureAndHumidityData.timestamp) == year,
-                           func.extract('month', TemperatureAndHumidityData.timestamp) == month).first()
+                           extract('year', TemperatureAndHumidityData.timestamp) == year,
+                           extract('month', TemperatureAndHumidityData.timestamp) == month).first()
                 if temp_humidity_min_max:
                     monthly_data["temperature_min"], monthly_data["temperature_max"] = temp_humidity_min_max
 
