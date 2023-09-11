@@ -109,7 +109,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         user = db_session.query(models.User).filter(User.email_id == payload.get('email_id')).first()
     except:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_UNAUTHORIZED,
             detail='invalid username or password')
 
     return schemas.User(email_id=user.email_id, first_name=user.first_name, last_name=user.last_name,
@@ -119,6 +119,23 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 @app.get('/users/me', response_model=schemas.User)
 def get_user(user: schemas.User = Depends(get_current_user)):
     return user
+
+@app.post('/reset-password', response_model=None)
+def reset_password(email_id: str, password: str, new_password: str):
+    user = db_session.query(models.User).filter(User.email_id ==(email_id)).first()
+    user = db_session.query(models.User).filter(User.email_id == email_id).first()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='username does not exist')
+
+    if user.verify_password(password):
+        user.password = bcrypt.hash(new_password)
+        db_session.commit()
+        return True  # Password updated successfully
+    else:
+        return False  # Incorrect current password
 
 
 @app.post('/users', response_model=None)
