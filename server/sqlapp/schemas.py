@@ -91,10 +91,9 @@ class PurposeType(str, Enum):
 class UserBase(BaseModel):
     email_id: str
     password: Optional[str] = None
-    first_name: str
-    last_name: str
+    name: str
     contact_number: int
-    purpose: PurposeType
+  #  purpose: PurposeType
 
 class UserCreate(UserBase):
     pass

@@ -112,12 +112,17 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             status_code=status.HTTP_400_UNAUTHORIZED,
             detail='invalid username or password')
 
-    return schemas.User(email_id=user.email_id, first_name=user.first_name, last_name=user.last_name,
-                        contact_number=user.contact_number, purpose=user.purpose.value, authorized=user.authorized)
+    return schemas.User(email_id=user.email_id, name = user.name,
+                        contact_number=user.contact_number, authorized=user.authorized)
 
 
-@app.get('/users/me', response_model=schemas.User)
+@app.post('/users/login', response_model=schemas.User)
 def get_user(user: schemas.User = Depends(get_current_user)):
+    return user
+
+
+@app.get('/users/details', response_model=schemas.User)
+def get_user_details(user: schemas.User = Depends(get_current_user)):
     return user
 
 @app.post('/reset-password', response_model=None)
@@ -137,15 +142,24 @@ def reset_password(email_id: str, password: str, new_password: str):
     else:
         return False  # Incorrect current password
 
-
-@app.post('/users', response_model=None)
+@app.post('/users/create', response_model=dict)
 def create_user(user: schemas.User):
     if (check_email(user.email_id) == 0):
-        user_obj = models.User(email_id=user.email_id, password=bcrypt.hash(user.password), first_name=user.first_name,
-                               last_name=user.last_name, contact_number=user.contact_number, id=user.id,
-                               purpose=user.purpose.value, authorized = False)
+        user_obj = models.User(email_id=user.email_id, password=bcrypt.hash(user.password), name=user.name,
+                               contact_number=user.contact_number,id = user.id,
+                                authorized = False)
+        #purpose=user.purpose.value,
         db_session.add(user_obj)
         db_session.commit()
+
+        # Generate a token for the newly created user
+        user_dict = {
+            "id": user_obj.id,
+            "email_id": user_obj.email_id
+        }
+        access_token = create_access_token(user_dict)
+
+        return {'access_token': access_token, 'token_type': 'bearer'}
 
     elif (check_email(user.email_id) == 1):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account already exists")
@@ -153,6 +167,13 @@ def create_user(user: schemas.User):
     elif (check_email(user.email_id) == 2):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email entered")
 
+
+
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm="HS256")
+    return encoded_jwt
 
 def check_email(email_id):
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'

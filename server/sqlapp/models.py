@@ -75,10 +75,9 @@ class User(base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     email_id = Column(String, unique=True)
     password = Column(String, nullable=True)
-    first_name = Column(String)
-    last_name = Column(String)
+    name = Column(String)
     contact_number = Column(Integer)
-    purpose = Column(Enum(purposeType))
+    #purpose = Column(Enum(purposeType))
     authorized = Column(Boolean)
     @classmethod
     def get_user(cls, email_id):
