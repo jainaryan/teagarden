@@ -3,15 +3,16 @@ import openpyxl
 from sqlapp.models import *
 from sqlapp.database import *
 
-#NEED TO ENSURE READING SHOULD BE 0 INSTEAD OF NOTHING
+
+# NEED TO ENSURE READING SHOULD BE 0 INSTEAD OF NOTHING
 
 def type_1_reader(workbook):
     first_sheet = True
     for sheet in workbook._sheets:
         if first_sheet:
-            entityName,entity_id, station_id, latitude, longitude, district, state, area, unit = read_values(sheet)
+            entityName, entity_id, station_id, latitude, longitude, district, state, area, unit = read_values(sheet)
             if check_entity_name(entityName):
-                #entity in table
+                # entity in table
                 pass
             else:
                 # entity not in table
@@ -25,16 +26,26 @@ def type_1_reader(workbook):
             input_data_from_excel(sheet, station_id, unit)
 
 
-def format_sheet(sheet, workbook):
+def find_year(sheet):
+    row  =4
+    for column in range(1,14):
+        if sheet.cell(row=row, column=column).value == None:
+            pass
+        else:
+            return row, column
 
+
+def format_sheet(sheet, workbook):
     sheet.cell(row=1, column=7).value = ""
-    sheet.cell(row=1, column=1).value = sheet.cell(row=4, column=7).value
+    year_row, year_column = find_year(sheet)
+    sheet.cell(row=1, column=1).value = sheet.cell(row=year_row, column=year_column).value
     for column in range(1, 14):
         for row in range(2, 37):
             sheet.cell(row=row, column=column).value = sheet.cell(row=row + 3, column=column).value
-    #there will be a problem here as multiple files will be stored with the same name
+            if sheet.cell(row = row, column = column).value==None:
+                sheet.cell(row=row, column=column).value = 0
+    # there will be a problem here as multiple files will be stored with the same name
     workbook.save("done.xlsx")
-
 
 
 def input_data_from_excel(sheet, station_id, unit):
@@ -42,7 +53,7 @@ def input_data_from_excel(sheet, station_id, unit):
         multiplier = 25.4
     elif (unit == 'millimetres'):
         multiplier = 1
-    elif (unit == 'centimeters'):
+    elif (unit == 'centimetres'):
         multiplier = 10
     temp_year = sheet.cell(row=1, column=1).value
     year = get_year(temp_year)
@@ -53,12 +64,12 @@ def input_data_from_excel(sheet, station_id, unit):
         last_day = find_last_day_of_month(month, int(year)) + 2
         for day in range(first_day, last_day + 1):
             check_reading = (sheet.cell(row=day, column=month).value)
-            if check_reading == 'N/A' or check_reading == None:
-                break
+            if check_reading == 'N/A':
+                pass
             else:
                 reading = float(sheet.cell(row=day, column=month).value) * multiplier
                 start_time, end_time = convert_date(year, month - 1, day - 2)
-                rainfallData_entry(station_id=station_id, reading=reading, start_time = start_time, end_time=end_time)
+                rainfallData_entry(station_id=station_id, reading=reading, start_time=start_time, end_time=end_time)
 
 
 def find_last_day_of_month(month: int, year: int):
@@ -92,8 +103,8 @@ def read_values(sheet):
     district = sheet.cell(row=6, column=2).value
     state = sheet.cell(row=7, column=2).value
     area = sheet.cell(row=8, column=2).value
-    unit = sheet.cell(row = 10, column = 2).value
-    return name,entity_id, station_id, latitude, longitude, district, state, area, unit
+    unit = sheet.cell(row=10, column=2).value
+    return name, entity_id, station_id, latitude, longitude, district, state, area, unit
 
 
 def geoEntity_entry(name: str, area=None, latitude=None, longitude=None, district=None, state='Assam'):
@@ -140,15 +151,15 @@ def check_entity_name(entityName: str):
 
 
 def rainfallData_entry(station_id: int, reading: float, start_time: datetime, end_time: datetime):
-    rainfalldata = RainfallData(station_id=station_id, reading=reading, start_time = start_time, end_time= end_time)
+    rainfalldata = RainfallData(station_id=station_id, reading=reading, start_time=start_time, end_time=end_time)
     db_session.add(rainfalldata)
     db_session.commit()
 
 
-def get_year(year: int):
-    temp_year = year[4:]
-    temp_year = temp_year.strip()
-    return temp_year
+def get_year(year):
+    temp_year = year.split()
+    temp_year = temp_year[1]
+    return int(temp_year)
 
 
 def convert_date(year: int, month: int, day: int):
@@ -158,4 +169,4 @@ def convert_date(year: int, month: int, day: int):
 
     # Set the end time to 11:59 pm
     end_time = datetime.combine(converted_date, time(23, 59))
-    return start_time,end_time
+    return start_time, end_time

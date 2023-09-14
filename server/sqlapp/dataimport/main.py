@@ -1,12 +1,13 @@
 import os
 from datetime import datetime
 import openpyxl
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 from sqlapp.models import *
 from sqlapp.database import db_session, init_db, engine, conn
 from excel_file_checker import read_workbook
 from sqlapp.config import folder
-#from excel_file_checker import check_file
+
 
 def populate_units_table():
     db_session.add(Units(measurement='Humidity', unit='Percentage'))
@@ -49,9 +50,15 @@ def test_temperatureAndHumidity_entry(station: Station, dataType: EntryType, hou
 
 def reset_tables():
     init_db()
-    sql = text(
-        'TRUNCATE public."geoEntity", public."users", public."units", public."station", public."rainfallData", public."temperatureAndHumidityData" RESTART IDENTITY;')
-    db_session.execute(sql)
+    try:
+        sql = text(
+            'TRUNCATE public."geoEntity", public."users", public."units", public."station", public."rainfallData", public."temperatureAndHumidityData" RESTART IDENTITY;')
+        db_session.execute(sql)
+        db_session.commit()
+    except SQLAlchemyError as e:
+
+        print(f"Error: {str(e)}")
+        db_session.rollback()
     db_session.commit()
 
 
