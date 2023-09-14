@@ -46,6 +46,43 @@ def get_db():
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
 
+def authenticate_user(emailid: str, password: str):
+    user = db_session.query(models.User).filter(User.email_id == emailid).first()
+    if not user:
+        return None  # User not found
+    if not user.verify_password(password):
+        return None  # Invalid credentials
+    return user
+
+
+def generate_token(user):
+    user_dict = {
+        "id": user.id,
+        "email_id": user.email_id
+    }
+    token = jwt.encode(user_dict, JWT_SECRET, algorithm="HS256")
+    return token
+
+
+# Modify the login route to use OAuth2PasswordRequestForm for input
+@app.post('/users/login', response_model=dict)
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    # Generate a token using OAuth2PasswordBearer tokenUrl
+    user_dict = {
+        "id": user.id,
+        "email_id": user.email_id
+    }
+    access_token = jwt.encode(user_dict, JWT_SECRET, algorithm="HS256")
+
+    # Return the token
+    return {'access_token': access_token, 'token_type': 'bearer'}
+
+
+
 @app.get('/gardens/{g_id}', response_model=schemas.GeoEntity)
 def find_garden(g_id: int, db: Session = Depends(get_db)):
     garden_found = crud.get_entity(db, g_id=g_id)
@@ -94,15 +131,6 @@ def get_entities(year: int, db: Session = Depends(get_db)):
     return data
 
 
-def authenticate_user(emailid: str, password: str):
-    user = db_session.query(models.User).filter(User.email_id == emailid).first()
-    if not user:
-        return False
-    if not user.verify_password(password):
-        return False
-    return user
-
-
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
@@ -116,57 +144,57 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
                         contact_number=user.contact_number, authorized=user.authorized)
 
 
-@app.post('/users/login', response_model=schemas.User)
-def get_user(user: schemas.User = Depends(get_current_user)):
-    return user
-
-
 @app.get('/users/details', response_model=schemas.User)
 def get_user_details(user: schemas.User = Depends(get_current_user)):
     return user
 
-@app.post('/reset-password', response_model=None)
-def reset_password(email_id: str, password: str, new_password: str):
-    user = db_session.query(models.User).filter(User.email_id ==(email_id)).first()
-    user = db_session.query(models.User).filter(User.email_id == email_id).first()
 
-    if user is None:
+@app.post('/reset-password', response_model=bool)
+def reset_password(
+    email_id: str,
+    current_password: str,  # Change the parameter name to current_password
+    new_password: str,
+    user: schemas.User = Depends(get_current_user)
+):
+    # Check if the provided email_id matches the authenticated user's email_id
+    if user.email_id != email_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='username does not exist')
+            detail="Invalid email_id for the authenticated user",
+        )
 
-    if user.verify_password(password):
-        user.password = bcrypt.hash(new_password)
-        db_session.commit()
-        return True  # Password updated successfully
-    else:
-        return False  # Incorrect current password
+    # Verify the current password
+    if not user.verify_password(current_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect current password",
+        )
 
-@app.post('/users/create', response_model=dict)
+    # Update the user's password with the new password
+    user.password = bcrypt.hash(new_password)
+    db_session.commit()
+
+    return True
+
+@app.post('/users/create', response_model=None)
 def create_user(user: schemas.User):
     if (check_email(user.email_id) == 0):
-        user_obj = models.User(email_id=user.email_id, password=bcrypt.hash(user.password), name=user.name,
-                               contact_number=user.contact_number,id = user.id,
-                                authorized = False)
-        #purpose=user.purpose.value,
+        user_obj = models.User(
+            email_id=user.email_id,
+            password=bcrypt.hash(user.password),
+            name=user.name,
+            contact_number=user.contact_number,
+            id=user.id,
+            authorized=False
+        )
         db_session.add(user_obj)
         db_session.commit()
-
-        # Generate a token for the newly created user
-        user_dict = {
-            "id": user_obj.id,
-            "email_id": user_obj.email_id
-        }
-        access_token = create_access_token(user_dict)
-
-        return {'access_token': access_token, 'token_type': 'bearer'}
 
     elif (check_email(user.email_id) == 1):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account already exists")
 
     elif (check_email(user.email_id) == 2):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email entered")
-
 
 
 
@@ -187,21 +215,6 @@ def check_email(email_id):
             return 2
 
 
-
-@app.post('/token')
-def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)
-    if not user:
-        return {"error": "invalid credentials"}
-    user_dict = {
-        "id": user.id,
-        "password": user.password,
-        "email_id": user.email_id
-
-    }
-
-    token = jwt.encode(user_dict, JWT_SECRET, algorithm="HS256")
-    return {'access_token': token, 'token_type': 'bearer'}
 
 
 def authorize_user(email_id):
