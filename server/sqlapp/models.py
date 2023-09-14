@@ -70,6 +70,10 @@ class purposeType(enum.Enum):
         curious = 'just curious'
 
 
+class authStatus(enum.Enum):
+    yes = 'yes'
+    no = 'no'
+
 class User(base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -78,7 +82,7 @@ class User(base):
     name = Column(String)
     contact_number = Column(Integer)
     #purpose = Column(Enum(purposeType))
-    authorized = Column(Boolean)
+    authorized = Column(Enum(authStatus))
     @classmethod
     def get_user(cls, email_id):
        return cls.get(email_id = email_id)

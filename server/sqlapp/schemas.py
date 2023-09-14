@@ -85,6 +85,9 @@ class PurposeType(str, Enum):
     curious = 'just curious'
     # Add more purposes as needed
 
+class authStatus(str, Enum):
+    yes = 'yes'
+    no = 'no'
 
 #optional part is getting returned as null need to fix
 
@@ -93,6 +96,7 @@ class UserBase(BaseModel):
     password: Optional[str] = None
     name: str
     contact_number: int
+    authorized: authStatus
   #  purpose: PurposeType
 
 class UserCreate(UserBase):

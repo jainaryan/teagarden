@@ -185,7 +185,7 @@ def create_user(user: schemas.User):
             name=user.name,
             contact_number=user.contact_number,
             id=user.id,
-            authorized=False
+            authorized='no'
         )
         db_session.add(user_obj)
         db_session.commit()
@@ -219,7 +219,7 @@ def check_email(email_id):
 
 def authorize_user(email_id):
     user = db_session.query(models.User).filter(User.email_id == email_id).first()
-    user.authorized = True
+    user.authorized = 'yes'
 
 
 if __name__ == "__main__":
