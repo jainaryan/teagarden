@@ -27,7 +27,7 @@ def rainfall_type_1_reader(workbook):
 
 
 def find_year(sheet):
-    row  =4
+    row = 4
     for column in range(1,14):
         if sheet.cell(row=row, column=column).value == None:
             pass

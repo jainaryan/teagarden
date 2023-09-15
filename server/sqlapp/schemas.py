@@ -22,7 +22,7 @@ class GeoEntityCreate(GeoEntityBase):
     pass
 
 class GeoEntity(GeoEntityBase):
-    id: int
+    entity_id: int
 
     class Config:
         orm_mode = True

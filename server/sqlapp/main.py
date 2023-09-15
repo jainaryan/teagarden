@@ -127,8 +127,8 @@ def get_all_rainfalldata():
 
 
 @app.get('/')
-def get_entities(year: int, db: Session = Depends(get_db)):
-    data = get_all_entities_with_data(db, year)
+def get_entities(start_year: int, end_year: int, db: Session = Depends(get_db)):
+    data = get_all_entities_with_data(db, start_year,end_year)
     return data
 
 
