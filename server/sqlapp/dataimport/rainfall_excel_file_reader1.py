@@ -1,12 +1,12 @@
 from datetime import datetime, time
 import openpyxl
+from numpy import NaN
+
 from sqlapp.models import *
 from sqlapp.database import *
 
 
-# NEED TO ENSURE READING SHOULD BE 0 INSTEAD OF NOTHING
-
-def type_1_reader(workbook):
+def rainfall_type_1_reader(workbook):
     first_sheet = True
     for sheet in workbook._sheets:
         if first_sheet:
@@ -65,9 +65,12 @@ def input_data_from_excel(sheet, station_id, unit):
         for day in range(first_day, last_day + 1):
             check_reading = (sheet.cell(row=day, column=month).value)
             if check_reading == 'N/A':
-                pass
+
+                start_time, end_time = convert_date(year, month - 1, day - 2)
+                rainfallData_entry(station_id=station_id, reading=NaN, start_time=start_time, end_time=end_time)
             else:
                 reading = float(sheet.cell(row=day, column=month).value) * multiplier
+                reading = round(reading,2)
                 start_time, end_time = convert_date(year, month - 1, day - 2)
                 rainfallData_entry(station_id=station_id, reading=reading, start_time=start_time, end_time=end_time)
 
@@ -115,7 +118,7 @@ def geoEntity_entry(name: str, area=None, latitude=None, longitude=None, distric
 
 def get_entity_id(entityName: str):
     entity = db_session.query(GeoEntity).filter_by(name=entityName).first()
-    return entity.id
+    return entity.entity_id
 
 
 def get_sensor(stationName: str):
@@ -133,8 +136,8 @@ def create_station_entry(entity_id: int):
 def station_entry(entity_id: int, name=None, lat=None, long=None, type=None):
     init_db()
     if name == None:
-        garden = db_session.query(GeoEntity).filter_by(id=entity_id).first()
-        name = str(garden.name) + "_sensor" + str(garden.id)
+        entity = db_session.query(GeoEntity).filter_by(entity_id=entity_id).first()
+        name = str(entity.name) + "_sensor" + str(entity.entity_id)
     db_session.add(Station(sensor_name=name, entity_id=entity_id, sensor_type=type, latitude=lat, longitude=long))
     db_session.commit()
 

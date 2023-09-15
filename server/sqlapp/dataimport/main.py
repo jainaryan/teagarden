@@ -39,20 +39,14 @@ def test_rainfalldata_entry(sensor: Station):
     db_session.commit()
 
 
-def test_temperatureAndHumidity_entry(station: Station, dataType: EntryType, hour: int, minute: int):
-    init_db()
-    time_str = "" + str(hour) + "::" + str(minute) + "::" + "00"
-    time_str = datetime.strptime(time_str, '%H::%M::%S')
-    db_session.add(
-        TemperatureAndHumidityData(station_id=station.id, reading=100, timestamp=time_str, dataType=dataType))
-    db_session.commit()
+
 
 
 def reset_tables():
     init_db()
     try:
         sql = text(
-            'TRUNCATE public."geoEntity", public."users", public."units", public."station", public."rainfallData", public."temperatureAndHumidityData" RESTART IDENTITY;')
+            'TRUNCATE public."geoEntity", public."users", public."units", public."station", public."rainfallData",public."temperatureAndHumidityInstantaneousData" ,public."dailyTemperatureAndHumidityData" RESTART IDENTITY;')
         db_session.execute(sql)
         db_session.commit()
     except SQLAlchemyError as e:

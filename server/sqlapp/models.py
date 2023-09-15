@@ -12,7 +12,7 @@ from sqlalchemy import Enum
 class GeoEntity(base):
     __tablename__ = 'geoEntity'
 
-    id = Column(Integer, primary_key=True)
+    entity_id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
@@ -29,10 +29,11 @@ class Station(base):
     longitude = Column(Float, nullable=True)
     sensor_type = Column(String(50), nullable=True)
     sensor_name = Column(String(50), nullable=True, unique=True)
-    entity_id = Column(Integer, ForeignKey('geoEntity.id'), nullable=False)
-
+    entity_id = Column(Integer, ForeignKey('geoEntity.entity_id'), nullable=False)
 
     geoEntity = relationship('GeoEntity')
+
+
 
 
 class RainfallData(base):
@@ -52,8 +53,9 @@ class EntryType(enum.Enum):
     temperature = 'temperature'
 
 
-class TemperatureAndHumidityData(base):
-    __tablename__ = 'temperatureAndHumidityData'
+class TemperatureAndHumidityInstantaneousData(base):
+
+    __tablename__ = 'temperatureAndHumidityInstantaneousData'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     station_id = Column(Integer, ForeignKey('station.id'))
@@ -63,16 +65,23 @@ class TemperatureAndHumidityData(base):
     # Establish a relationship with Sensor
     station = relationship('Station')
 
+class DailyTemperatureAndHumidityRangeData(base):
+    __tablename__ = 'dailyTemperatureAndHumidityData'
 
-class purposeType(enum.Enum):
-        other = 'other'
-        research = 'research purpose'
-        curious = 'just curious'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    station_id = Column(Integer, ForeignKey('station.id'))
+    dataType = Column(Enum(EntryType))
+    min_reading = Column(Float)
+    max_reading = Column(Float)
+    day = Column(Date)
+
+    station = relationship('Station')
 
 
 class authStatus(enum.Enum):
-    yes = 'yes'
-    no = 'no'
+    no_priviliges = 'no privileges'
+    low_privileges = 'low privileges'
+    high_privileges = 'high priviliges'
 
 class User(base):
     __tablename__ = "users"
@@ -81,7 +90,7 @@ class User(base):
     password = Column(String, nullable=True)
     name = Column(String)
     contact_number = Column(Integer)
-    #purpose = Column(Enum(purposeType))
+    purpose = Column(String)
     authorized = Column(Enum(authStatus))
     @classmethod
     def get_user(cls, email_id):

@@ -23,7 +23,7 @@ app = FastAPI()
 session = db_session
 
 # CORS PART
-origins = ['https://localhost:3000']
+origins = ['*']
 JWT_SECRET = '983e5a881e16079ce4bed2ce0f4fd8f6acf0e85df658b56a41504df6fd1ea639'
 app.add_middleware(
     CORSMiddleware,
@@ -82,7 +82,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {'access_token': access_token, 'token_type': 'bearer'}
 
 
-
 @app.get('/gardens/{g_id}', response_model=schemas.GeoEntity)
 def find_garden(g_id: int, db: Session = Depends(get_db)):
     garden_found = crud.get_entity(db, g_id=g_id)
@@ -116,7 +115,9 @@ def get_all_rainfalldata():
             'id': data.id,
             'station_id': data.station_id,
             'reading': data.reading,
-            'date': data.date.isoformat(),  # Convert date to ISO format for JSON
+            'start_time':data.start_time.isoformat(),
+            'end_time': data.end_time.isoformat(),
+            #'date': data.date.isoformat(),  # Convert date to ISO format for JSON
             'entity_name': data.station.geoEntity.name,  # Add entity_name
             'entity_id': data.station.geoEntity.id,  # Add entity_id
         }
@@ -185,7 +186,7 @@ def create_user(user: schemas.User):
             name=user.name,
             contact_number=user.contact_number,
             id=user.id,
-            authorized='no'
+            authorized='no privileges'
         )
         db_session.add(user_obj)
         db_session.commit()
@@ -195,7 +196,6 @@ def create_user(user: schemas.User):
 
     elif (check_email(user.email_id) == 2):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email entered")
-
 
 
 def create_access_token(data: dict):
@@ -216,11 +216,11 @@ def check_email(email_id):
 
 
 
-
+'''
 def authorize_user(email_id):
     user = db_session.query(models.User).filter(User.email_id == email_id).first()
     user.authorized = 'yes'
-
+'''
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=7000)
