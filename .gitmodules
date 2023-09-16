@@ -1,3 +1,6 @@
 [submodule "workpls-frontend"]
 	path = workpls-frontend
 	url = https://github.com/Rishu026/workpls.git
+[submodule "frontend-workpls"]
+	path = frontend-workpls
+	url = https://github.com/Rishu026/workpls
