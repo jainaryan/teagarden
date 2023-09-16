@@ -1,7 +1,7 @@
 from datetime import datetime, time
 import openpyxl
 from numpy import NaN
-
+from common_helper_functions import *
 from sqlapp.models import *
 from sqlapp.database import *
 
@@ -26,17 +26,10 @@ def rainfall_type_1_reader(workbook):
             input_data_from_excel(sheet, station_id, unit)
 
 
-def find_year(sheet):
-    row = 4
-    for column in range(1,14):
-        if sheet.cell(row=row, column=column).value == None:
-            pass
-        else:
-            return row, column
 
 
 def format_sheet(sheet, workbook):
-    sheet.cell(row=1, column=7).value = ""
+    #sheet.cell(row=1, column=7).value = ""
     year_row, year_column = find_year(sheet)
     sheet.cell(row=1, column=1).value = sheet.cell(row=year_row, column=year_column).value
     for column in range(1, 14):
@@ -65,7 +58,6 @@ def input_data_from_excel(sheet, station_id, unit):
         for day in range(first_day, last_day + 1):
             check_reading = (sheet.cell(row=day, column=month).value)
             if check_reading == 'N/A':
-
                 start_time, end_time = convert_date(year, month - 1, day - 2)
                 rainfallData_entry(station_id=station_id, reading=NaN, start_time=start_time, end_time=end_time)
             else:
@@ -97,72 +89,10 @@ def find_last_day_of_month(month: int, year: int):
         return 31
 
 
-def read_values(sheet):
-    name = sheet.cell(row=1, column=2).value
-    entity_id = sheet.cell(row=2, column=2).value
-    station_id = sheet.cell(row=3, column=2).value
-    latitude = sheet.cell(row=4, column=2).value
-    longitude = sheet.cell(row=5, column=2).value
-    district = sheet.cell(row=6, column=2).value
-    state = sheet.cell(row=7, column=2).value
-    area = sheet.cell(row=8, column=2).value
-    unit = sheet.cell(row=10, column=2).value
-    return name, entity_id, station_id, latitude, longitude, district, state, area, unit
-
-
-def geoEntity_entry(name: str, area=None, latitude=None, longitude=None, district=None, state='Assam'):
-    entity = GeoEntity(name=name, latitude=latitude, longitude=longitude, district=district, state=state, area=area)
-    db_session.add(entity)
-    db_session.commit()
-
-
-def get_entity_id(entityName: str):
-    entity = db_session.query(GeoEntity).filter_by(name=entityName).first()
-    return entity.entity_id
-
-
-def get_sensor(stationName: str):
-    sensor = db_session.query(Station).filter_by(sensor_name=stationName).first()
-    return sensor
-
-
-def create_station_entry(entity_id: int):
-    stationName = None
-    station_entry(entity_id=entity_id, name=stationName)
-    station_id = (db_session.query(Station).filter_by(entity_id=entity_id).first()).id
-    return station_id
-
-
-def station_entry(entity_id: int, name=None, lat=None, long=None, type=None):
-    init_db()
-    if name == None:
-        entity = db_session.query(GeoEntity).filter_by(entity_id=entity_id).first()
-        name = str(entity.name) + "_sensor" + str(entity.entity_id)
-    db_session.add(Station(sensor_name=name, entity_id=entity_id, sensor_type=type, latitude=lat, longitude=long))
-    db_session.commit()
-
-
-def check_entity_name(entityName: str):
-    entity = (db_session.query(GeoEntity).filter_by(name=entityName).first())
-
-    if entity == None:
-        # garden is not present in table
-        return False
-    else:
-        # garden is present in table
-        return True
-
-
 def rainfallData_entry(station_id: int, reading: float, start_time: datetime, end_time: datetime):
     rainfalldata = RainfallData(station_id=station_id, reading=reading, start_time=start_time, end_time=end_time)
     db_session.add(rainfalldata)
     db_session.commit()
-
-
-def get_year(year):
-    temp_year = year.split()
-    temp_year = temp_year[1]
-    return int(temp_year)
 
 
 def convert_date(year: int, month: int, day: int):
