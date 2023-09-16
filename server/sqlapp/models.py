@@ -73,15 +73,15 @@ class DailyTemperatureAndHumidityRangeData(base):
     dataType = Column(Enum(EntryType))
     min_reading = Column(Float)
     max_reading = Column(Float)
-    day = Column(Date)
+    date = Column(Date)
 
     station = relationship('Station')
 
 
 class authStatus(enum.Enum):
-    no_priviliges = 'no privileges'
-    low_privileges = 'low privileges'
-    high_privileges = 'high priviliges'
+    no_privileges = 'no_privileges'
+    low_privileges = 'low_privileges'
+    high_privileges = 'high_privileges'
 
 class User(base):
     __tablename__ = "users"
@@ -91,7 +91,8 @@ class User(base):
     name = Column(String)
     contact_number = Column(Integer)
     purpose = Column(String)
-    authorized = Column(Enum(authStatus))
+    #authorized = Column(Enum(authStatus), default=authStatus.no_privileges)
+    authorized = Column(String, default= 'no privileges')
     @classmethod
     def get_user(cls, email_id):
        return cls.get(email_id = email_id)

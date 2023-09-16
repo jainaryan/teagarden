@@ -86,8 +86,10 @@ class PurposeType(str, Enum):
     # Add more purposes as needed
 
 class authStatus(str, Enum):
-    yes = 'yes'
-    no = 'no'
+    no_priviliges = 'no privileges'
+    low_privileges = 'low privileges'
+    high_privileges = 'high priviliges'
+
 
 #optional part is getting returned as null need to fix
 
@@ -96,14 +98,16 @@ class UserBase(BaseModel):
     password: Optional[str] = None
     name: str
     contact_number: int
-    authorized: authStatus
-  #  purpose: PurposeType
+    #authorized: authStatus
+    purpose: str
+
+    #authorized: str
 
 class UserCreate(UserBase):
     pass
 
 class User(UserBase):
-    id: Optional[int] = None
+    #id: Optional[int] = None
 
     class Config:
         orm_mode = True

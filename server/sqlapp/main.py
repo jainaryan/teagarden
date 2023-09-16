@@ -15,7 +15,7 @@ from sqlapp import crud
 from sqlapp.crud import get_coordinates, get_all_entities_with_data
 from sqlapp.database import engine
 from fastapi.middleware.cors import CORSMiddleware
-from models import User
+from models import *
 
 models.base.metadata.create_all(bind=engine)
 
@@ -177,6 +177,34 @@ def reset_password(
 
     return True
 
+
+@app.post('/users/create', response_model=dict)
+def create_user(user: schemas.User):
+    if check_email(user.email_id) == 0:
+        user_obj = models.User(
+            email_id=user.email_id,
+            password=bcrypt.hash(user.password),
+            name=user.name,
+            contact_number=user.contact_number,
+            purpose=user.purpose,
+        )
+        db_session.add(user_obj)
+        db_session.commit()
+        user_dict = {
+            "email_id": user.email_id
+        }
+        # Generate a token for the newly registered user
+        access_token = create_access_token(data=user_dict)
+
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    elif check_email(user.email_id) == 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account already exists")
+
+    elif check_email(user.email_id) == 2:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email entered")
+
+'''
 @app.post('/users/create', response_model=None)
 def create_user(user: schemas.User):
     if (check_email(user.email_id) == 0):
@@ -185,9 +213,10 @@ def create_user(user: schemas.User):
             password=bcrypt.hash(user.password),
             name=user.name,
             contact_number=user.contact_number,
-            id=user.id,
-            authorized='no privileges'
+            purpose = user.purpose,
+
         )
+        user_obj = schemas.User
         db_session.add(user_obj)
         db_session.commit()
 
@@ -197,7 +226,7 @@ def create_user(user: schemas.User):
     elif (check_email(user.email_id) == 2):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email entered")
 
-
+'''
 def create_access_token(data: dict):
     to_encode = data.copy()
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm="HS256")

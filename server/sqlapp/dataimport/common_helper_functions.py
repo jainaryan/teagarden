@@ -12,6 +12,18 @@ def find_year(sheet):
             return row, column
 
 
+def count_stations_for_entity(entity_id: int) -> int:
+    return db_session.query(Station).filter_by(entity_id=entity_id).count()
+
+# Function to get the station ID for an entity if there's only one station
+def get_station_id_for_entity(entity_id: int) -> int:
+    station = db_session.query(Station).filter_by(entity_id=entity_id).first()
+    if station:
+        return station.id
+    else:
+        # Handle the case where no station is found
+        return None
+
 
 
 def geoEntity_entry(name: str, area=None, latitude=None, longitude=None, district=None, state='Assam'):
