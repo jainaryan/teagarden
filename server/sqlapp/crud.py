@@ -34,11 +34,11 @@ def get_yearly_or_monthly_data(db: Session, year: int, is_yearly: bool):
 
     for entity in entities:
         entity_data = {
-            "id": entity.entity_id,  # Change to entity.entity_id
+            "id": entity.entity_id,
             "name": entity.name,
-            "year": year,  # Include the year information
+            "year": year,
             "coordinates": {"longitude": entity.longitude, "latitude": entity.latitude},
-            "stations": []  # Add stations data here
+            "stations": []
         }
 
         # Fetch associated stations for the current entity
@@ -48,67 +48,37 @@ def get_yearly_or_monthly_data(db: Session, year: int, is_yearly: bool):
             station_data = {
                 "station_id": station.id,
                 "station_name": station.sensor_name,
+                "data": {}
             }
 
-            data = {
-                "rainfall_min": None,
-                "rainfall_max": None,
-                "temperature_min": None,
-                "temperature_max": None,
-                "humidity_min": None,
-                "humidity_max": None
-            }
-
-            # Fetch monthly data for RainfallData
-            if not is_yearly:
+            # Fetch data based on whether it's yearly or monthly
+            if is_yearly:
+                # Fetch yearly data for TemperatureAndHumidityData
+                temp_humidity_min_max = db.query(func.min(DailyTemperatureAndHumidityRangeData.min_reading),
+                                                 func.max(DailyTemperatureAndHumidityRangeData.max_reading)). \
+                    filter(DailyTemperatureAndHumidityRangeData.station_id == station.id,
+                           extract('year', DailyTemperatureAndHumidityRangeData.date) == year).first()
+                if temp_humidity_min_max:
+                    station_data["data"]["temperature_min"], station_data["data"]["temperature_max"] = temp_humidity_min_max
+            else:
+                # Fetch monthly data for TemperatureAndHumidityData
                 for month in range(1, 13):
-                    monthly_data = {
-                        "month": calendar.month_name[month],
-                    }
-
-                    rainfall_min_max = db.query(func.min(RainfallData.reading), func.max(RainfallData.reading)). \
-                        filter(RainfallData.station_id == station.id,
-                               extract('year', RainfallData.start_time) == year,
-                               extract('month', RainfallData.start_time) == month).first()
-                    if rainfall_min_max:
-                        monthly_data["rainfall_min"], monthly_data["rainfall_max"] = rainfall_min_max
-
-                    # Fetch monthly data for TemperatureAndHumidityData
                     temp_humidity_min_max = db.query(func.min(DailyTemperatureAndHumidityRangeData.min_reading),
                                                      func.max(DailyTemperatureAndHumidityRangeData.max_reading)). \
                         filter(DailyTemperatureAndHumidityRangeData.station_id == station.id,
-                               extract('year', DailyTemperatureAndHumidityRangeData.day) == year,
-                               extract('month', DailyTemperatureAndHumidityRangeData.day) == month).first()
+                               extract('year', DailyTemperatureAndHumidityRangeData.date) == year,
+                               extract('month', DailyTemperatureAndHumidityRangeData.date) == month).first()
                     if temp_humidity_min_max:
-                        monthly_data["temperature_min"], monthly_data["temperature_max"] = temp_humidity_min_max
+                        station_data["data"][f"month_{month}"] = {
+                            "temperature_min": temp_humidity_min_max[0],
+                            "temperature_max": temp_humidity_min_max[1]
+                        }
 
-                    # Similar logic for humidity data
-
-                    data[f"month_{month}"] = monthly_data
-
-            # Fetch yearly data for RainfallData, TemperatureAndHumidityData
-            rainfall_min_max = db.query(func.min(RainfallData.reading), func.max(RainfallData.reading)). \
-                filter(RainfallData.station_id == station.id,
-                       extract('year', RainfallData.start_time) == year).first()
-            if rainfall_min_max:
-                data["rainfall_min"], data["rainfall_max"] = rainfall_min_max
-
-            temp_humidity_min_max = db.query(func.min(DailyTemperatureAndHumidityRangeData.min_reading),
-                                             func.max(DailyTemperatureAndHumidityRangeData.max_reading)). \
-                filter(DailyTemperatureAndHumidityRangeData.station_id == station.id,
-                       extract('year', DailyTemperatureAndHumidityRangeData.day) == year).first()
-            if temp_humidity_min_max:
-                data["temperature_min"], data["temperature_max"] = temp_humidity_min_max
-
-            # Similar logic for humidity data
-
-            station_data["data"] = data
             entity_data["stations"].append(station_data)
 
         entities_with_data.append(entity_data)
 
     return entities_with_data
-
 def get_garden(db: Session, g_id: int):
     return db.query(GeoEntity).filter(id == g_id).first()
 

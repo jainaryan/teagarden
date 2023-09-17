@@ -1,3 +1,4 @@
+
 import enum
 import re
 
@@ -179,30 +180,26 @@ def reset_password(
 
 
 @app.post('/users/create', response_model=dict)
-def create_user(user: schemas.User):
-    if check_email(user.email_id) == 0:
-        user_obj = models.User(
-            email_id=user.email_id,
-            password=bcrypt.hash(user.password),
-            name=user.name,
-            contact_number=user.contact_number,
-            purpose=user.purpose,
-        )
-        db_session.add(user_obj)
-        db_session.commit()
-        user_dict = {
-            "email_id": user.email_id
-        }
-        # Generate a token for the newly registered user
-        access_token = create_access_token(data=user_dict)
+async def create_user(user: schemas.User):
+    #if check_email(user.email_id) == 0:
 
-        return {"access_token": access_token, "token_type": "bearer"}
+    user_obj = models.User(
+        email_id=user.email_id,
+        password=bcrypt.hash(user.password),
+        name=user.name,
+        contact_number=user.contact_number,
+        purpose=user.purpose,
+    )
+    db_session.add(user_obj)
+    db_session.commit()
+    user_dict = {
+        "email_id": user.email_id
+    }
+    # Generate a token for the newly registered user
+    access_token = create_access_token(data=user_dict)
+    return {"access_token": access_token}
 
-    elif check_email(user.email_id) == 1:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account already exists")
 
-    elif check_email(user.email_id) == 2:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email entered")
 
 '''
 @app.post('/users/create', response_model=None)

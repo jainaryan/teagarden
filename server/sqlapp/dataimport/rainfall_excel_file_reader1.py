@@ -12,11 +12,12 @@ def rainfall_type_1_reader(workbook):
         if first_sheet:
             entityName, entity_id, station_id, latitude, longitude, district, state, area, unit = read_values(sheet)
             if check_entity_name(entityName):
-                entity_id = get_entity_id(entityName)
-                station_count = count_stations_for_entity(entity_id)
-                if station_count == 1:
-                    # Return the station ID
-                    station_id = get_station_id_for_entity(entity_id)
+                if (entity_id == None):
+                    entity_id = get_entity_id(entityName)
+                    station_count = count_stations_for_entity(entity_id)
+                    if station_count == 1:
+                        # Return the station ID
+                        station_id = get_station_id_for_entity(entity_id)
             else:
                 # entity not in table
                 geoEntity_entry(name=entityName, latitude=latitude, longitude=longitude, district=district, state=state,
