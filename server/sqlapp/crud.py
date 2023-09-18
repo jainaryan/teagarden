@@ -10,40 +10,47 @@ from sqlalchemy.orm import Session
 # Assuming you have imported your models correctly
 from models import GeoEntity, Station, RainfallData, DailyTemperatureAndHumidityRangeData
 
-
 def get_all_entities_with_data(db: Session, start_year: int, end_year: int):
     entities_with_data = []
 
     # Check if the range of years is less than 5
     if end_year - start_year + 1 <= 5:
-        # Return monthly data
-        for year in range(start_year, end_year + 1):
-            entities_with_data.extend(get_yearly_or_monthly_data(db, year, is_yearly=False))
+        is_yearly = False  # Fetch monthly data
     else:
-        # Return yearly data
-        for year in range(start_year, end_year + 1):
-            entities_with_data.extend(get_yearly_or_monthly_data(db, year, is_yearly=True))
-
-    return entities_with_data
-
-def get_yearly_or_monthly_data(db: Session, year: int, is_yearly: bool):
-    entities_with_data = []
+        is_yearly = True  # Fetch yearly data
 
     # Fetch all GeoEntities
     entities = db.query(GeoEntity).all()
 
     for entity in entities:
-        entity_data = {
-            "id": entity.entity_id,
-            "name": entity.name,
+        entity_data = get_entity_yearly_or_monthly_data(db, entity.entity_id, is_yearly, start_year, end_year)
+        entities_with_data.append(entity_data)
+
+    return entities_with_data
+
+def get_entity_yearly_or_monthly_data(db: Session, entity_id: int, is_yearly: bool, start_year: int, end_year: int):
+    entity_with_data = {
+        "id": entity_id,
+        "years": [],
+        "coordinates": None,  # You can add coordinates here if needed
+        "stations": []
+    }
+
+    # Fetch entity details (you can add coordinates here if needed)
+    entity = db.query(GeoEntity).filter(GeoEntity.entity_id == entity_id).first()
+    entity_with_data["coordinates"] = {"longitude": entity.longitude, "latitude": entity.latitude}
+
+    # Fetch associated stations for the current entity
+    stations = db.query(Station).filter_by(entity_id=entity_id).all()
+
+    # Iterate through years
+    for year in range(start_year, end_year + 1):
+        year_data = {
             "year": year,
-            "coordinates": {"longitude": entity.longitude, "latitude": entity.latitude},
             "stations": []
         }
 
-        # Fetch associated stations for the current entity
-        stations = db.query(Station).filter_by(entity_id=entity.entity_id).all()
-
+        # Fetch data for each station
         for station in stations:
             station_data = {
                 "station_id": station.id,
@@ -59,7 +66,16 @@ def get_yearly_or_monthly_data(db: Session, year: int, is_yearly: bool):
                     filter(DailyTemperatureAndHumidityRangeData.station_id == station.id,
                            extract('year', DailyTemperatureAndHumidityRangeData.date) == year).first()
                 if temp_humidity_min_max:
-                    station_data["data"]["temperature_min"], station_data["data"]["temperature_max"] = temp_humidity_min_max
+                    station_data["data"]["temperature_min"], station_data["data"][
+                        "temperature_max"] = temp_humidity_min_max
+
+                # Fetch yearly data for RainfallData
+                rainfall_min_max = db.query(func.min(RainfallData.reading), func.max(RainfallData.reading)). \
+                    filter(RainfallData.station_id == station.id,
+                           extract('year', RainfallData.start_time) == year).first()
+                if rainfall_min_max:
+                    station_data["data"]["rainfall_min"], station_data["data"]["rainfall_max"] = rainfall_min_max
+
             else:
                 # Fetch monthly data for TemperatureAndHumidityData
                 for month in range(1, 13):
@@ -74,11 +90,22 @@ def get_yearly_or_monthly_data(db: Session, year: int, is_yearly: bool):
                             "temperature_max": temp_humidity_min_max[1]
                         }
 
-            entity_data["stations"].append(station_data)
+                    # Fetch monthly data for RainfallData
+                    rainfall_min_max = db.query(func.min(RainfallData.reading), func.max(RainfallData.reading)). \
+                        filter(RainfallData.station_id == station.id,
+                               extract('year', RainfallData.start_time) == year,
+                               extract('month', RainfallData.start_time) == month).first()
+                    if rainfall_min_max:
+                        station_data["data"][f"month_{month}"]["rainfall_min"], station_data["data"][f"month_{month}"][
+                            "rainfall_max"] = rainfall_min_max
 
-        entities_with_data.append(entity_data)
+            year_data["stations"].append(station_data)
 
-    return entities_with_data
+        entity_with_data["years"].append(year_data)
+
+    return entity_with_data
+
+
 def get_garden(db: Session, g_id: int):
     return db.query(GeoEntity).filter(id == g_id).first()
 

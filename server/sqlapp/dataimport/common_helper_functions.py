@@ -5,7 +5,7 @@ from sqlapp.database import db_session, init_db
 
 def find_year(sheet):
     row = 4
-    for column in range(1,14):
+    for column in range(1,16):
         if sheet.cell(row=row, column=column).value == None:
             pass
         else:

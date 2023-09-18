@@ -93,6 +93,10 @@ class authStatus(str, Enum):
 
 #optional part is getting returned as null need to fix
 
+class UserResponse(BaseModel):
+    name: str
+    email_id: str
+
 class UserBase(BaseModel):
     email_id: str
     password: Optional[str] = None

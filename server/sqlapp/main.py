@@ -12,6 +12,7 @@ from fastapi import Depends, FastAPI, HTTPException, Header, status
 from sqlalchemy.orm import Session
 from typing import Annotated, Optional, List
 import models, schemas
+from schemas import *
 from sqlapp import crud
 from sqlapp.crud import get_coordinates, get_all_entities_with_data
 from sqlapp.database import engine
@@ -47,13 +48,6 @@ def get_db():
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
 
-def authenticate_user(emailid: str, password: str):
-    user = db_session.query(models.User).filter(User.email_id == emailid).first()
-    if not user:
-        return None  # User not found
-    if not user.verify_password(password):
-        return None  # Invalid credentials
-    return user
 
 
 def generate_token(user):
@@ -65,23 +59,28 @@ def generate_token(user):
     return token
 
 
-# Modify the login route to use OAuth2PasswordRequestForm for input
-@app.post('/users/login', response_model=dict)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    # Generate a token using OAuth2PasswordBearer tokenUrl
+def authenticate_user(db: Session, email: str, password: str):
+    user = db.query(User).filter(User.email_id == email).first()
+    if not user or not user.verify_password(password):
+        return None
+    return user
+
+# Modified login endpoint using OAuth2
+@app.post("/users/login", response_model=dict)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Generate a token using JWT
     user_dict = {
         "id": user.id,
         "email_id": user.email_id
     }
-    access_token = jwt.encode(user_dict, JWT_SECRET, algorithm="HS256")
+    access_token = jwt.encode(user_dict, JWT_SECRET, algorithm='HS256')
 
-    # Return the token
-    return {'access_token': access_token, 'token_type': 'bearer'}
-
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get('/gardens/{g_id}', response_model=schemas.GeoEntity)
 def find_garden(g_id: int, db: Session = Depends(get_db)):
@@ -146,11 +145,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
                         contact_number=user.contact_number, authorized=user.authorized)
 
 
-@app.get('/users/details', response_model=schemas.User)
-def get_user_details(user: schemas.User = Depends(get_current_user)):
-    return user
-
-
+@app.get('/users/details', response_model=List[UserResponse])
+def get_user_details(db: Session = Depends(get_db)):
+    users = db.query(models.User).all()
+    for user in users:
+        user_details = [{"name": user.name, "email_id": user.email_id} ]
+    return user_details
 @app.post('/reset-password', response_model=bool)
 def reset_password(
     email_id: str,

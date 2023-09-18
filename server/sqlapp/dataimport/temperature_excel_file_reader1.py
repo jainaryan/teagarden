@@ -60,9 +60,9 @@ def get_reading(sheet, unit, day, month, year):
 
     reading = float(sheet.cell(row=day, column=month).value)
 
-    if (unit == 'Celsius'):
+    if (unit == 'celsius'):
         pass
-    elif (unit == 'Farenheit'):
+    elif (unit == 'fahrenheit'):
         reading = float((reading - 32) * 5 / 9)
 
     reading = round(reading, 2)
