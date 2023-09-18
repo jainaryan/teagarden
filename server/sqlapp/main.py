@@ -1,10 +1,21 @@
+import os
+import shutil
+import zipfile
 
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 import enum
 import re
-
+from io import StringIO
+import tempfile
+from pathlib import Path
+from fastapi.responses import FileResponse
+import pandas as pd
 import jwt
+from fastapi.openapi.models import Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy import JSON
+from sqlalchemy import JSON, text
 from passlib.hash import bcrypt
 from database import db_session
 import uvicorn
@@ -76,7 +87,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     # Generate a token using JWT
     user_dict = {
         "id": user.id,
-        "email_id": user.email_id
+        "email_id": user.email_id,
+        "role": user.authorized
     }
     access_token = jwt.encode(user_dict, JWT_SECRET, algorithm='HS256')
 
@@ -241,6 +253,56 @@ def check_email(email_id):
             return 2
 
 
+# Create an endpoint to download all data as a CSV file
+
+@app.get("/export-data-to-csv")
+def export_data_to_csv(db: Session = Depends(get_db)):
+    responses = []
+    temp_dir = tempfile.mkdtemp()
+    exported_files = []
+    tables_to_export = [
+        'geoEntity',
+        'station',
+        'rainfallData',
+        'temperatureAndHumidityInstantaneousData',
+        'dailyTemperatureAndHumidityData',
+        'units'
+    ]
+
+    for table_name in tables_to_export:
+        # Use SQLAlchemy's text function to declare the SQL query
+        query = text(f'SELECT * FROM "{table_name}"')
+        # Execute the query and fetch the data
+        result = db.execute(query)
+        # Fetch all rows from the result set
+        rows = result.fetchall()
+        # Get the column names from the result set
+        columns = result.keys()
+        # Create a DataFrame from the rows and columns
+        table_data = pd.DataFrame(rows, columns=columns)
+
+        csv_filename = f"{table_name}.csv"
+        csv_path = os.path.join(temp_dir, csv_filename)
+        table_data.to_csv(csv_path, index=False)
+
+        # Append the exported file path to the list
+        exported_files.append(csv_path)
+
+    exported_files = sorted(exported_files)
+    if not exported_files:
+        raise HTTPException(status_code=404, detail="No data to export")
+
+    # Create a ZIP archive containing all the CSV files
+    zip_filename = "data_export.zip"
+    with zipfile.ZipFile(zip_filename, "w") as zipf:
+        for file_path in exported_files:
+            zipf.write(file_path, os.path.basename(file_path))
+
+    return FileResponse(zip_filename, filename=zip_filename)
+
+
+
+    shutil.rmtree(temp_dir, ignore_errors=True)
 
 '''
 def authorize_user(email_id):
